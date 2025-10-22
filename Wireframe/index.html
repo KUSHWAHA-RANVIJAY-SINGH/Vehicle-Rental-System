@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RentWheels - Premium Vehicle Rentals</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-car"></i>
+                    Rent<span>Wheels</span>
+                </div>
+                <nav>
+                    <ul>
+                        <li><a href="#" class="active">Home</a></li>
+                        <li><a href="#vehicles">Vehicles</a></li>
+                        <li><a href="#how-it-works">How It Works</a></li>
+                        <li><a href="#testimonials">Testimonials</a></li>
+                        <li><a href="#contact">Contact</a></li>
+                    </ul>
+                </nav>
+                <div class="auth-buttons">
+                    <button id="loginBtn" class="btn-outline">Login</button>
+                    <button id="registerBtn" class="btn-primary">Register</button>
+                </div>
+                <div class="mobile-menu-btn">
+                    <i class="fas fa-bars"></i>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1>Find Your Perfect Ride</h1>
+                <p>Choose from a wide range of vehicles for your next adventure in Rajkot, Gujarat. Quality cars and
+                    motorcycles, competitive prices, and
+                    exceptional service.</p>
+                <div class="search-box">
+                    <div class="search-input">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <input type="text" placeholder="Rajkot, Gujarat" id="pickupLocation" value="Rajkot, Gujarat"
+                            readonly>
+                    </div>
+                    <div class="search-input">
+                        <i class="fas fa-calendar-alt"></i>
+                        <input type="date" placeholder="Pick-up Date" id="pickupDate">
+                    </div>
+                    <div class="search-input">
+                        <i class="fas fa-calendar-alt"></i>
+                        <input type="date" placeholder="Return Date" id="returnDate">
+                    </div>
+                    <div class="search-input">
+                        <i class="fas fa-motorcycle"></i>
+                        <select id="vehicleType">
+                            <option value="">Vehicle Type</option>
+                            <option value="economy">Economy Cars</option>
+                            <option value="suv">SUV</option>
+                            <option value="luxury">Luxury Cars</option>
+                            <option value="sports">Sports Cars</option>
+                            <option value="bike">Motorcycles</option>
+                        </select>
+                    </div>
+                    <button class="search-btn" id="searchVehicles">
+                        <i class="fas fa-search"></i> Search Vehicles
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features">
+        <div class="container">
+            <h2 class="section-title">Why Choose RentWheels?</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3>Fully Insured</h3>
+                    <p>All our vehicles come with comprehensive insurance coverage for your peace of mind.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-tag"></i>
+                    </div>
+                    <h3>Best Prices</h3>
+                    <p>Competitive pricing with no hidden fees. Price match guarantee.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    <h3>24/7 Support</h3>
+                    <p>Our customer service team is available around the clock to assist you.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-map-marked-alt"></i>
+                    </div>
+                    <h3>Rajkot Based</h3>
+                    <p>Convenient pickup and drop-off locations across Rajkot, Gujarat.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Vehicle Listings -->
+    <section class="vehicles" id="vehicles">
+        <div class="container">
+            <h2 class="section-title">Available Vehicles</h2>
+            <div class="filter-options">
+                <button class="filter-btn active" data-filter="all">All Vehicles</button>
+                <button class="filter-btn" data-filter="economy">Economy</button>
+                <button class="filter-btn" data-filter="suv">SUV</button>
+                <button class="filter-btn" data-filter="luxury">Luxury</button>
+                <button class="filter-btn" data-filter="sports">Sports</button>
+                <button class="filter-btn" data-filter="bike">Motorcycles</button>
+            </div>
+            <div class="vehicle-grid" id="vehicleGrid">
+                <!-- Vehicles will be populated by JavaScript -->
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="how-it-works" id="how-it-works">
+        <div class="container">
+            <h2 class="section-title">How It Works</h2>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h3>Search & Select</h3>
+                    <p>Find the perfect car or motorcycle for your needs using our easy search tools.</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-icon">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <h3>Book & Confirm</h3>
+                    <p>Select your dates and complete the quick booking process.</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-icon">
+                        <i class="fas fa-car-side"></i>
+                    </div>
+                    <h3>Pick Up & Go</h3>
+                    <p>Collect your vehicle from our convenient location in Rajkot and hit the road.</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-icon">
+                        <i class="fas fa-undo"></i>
+                    </div>
+                    <h3>Return & Review</h3>
+                    <p>Return the vehicle and share your experience with us.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section class="testimonials" id="testimonials">
+        <div class="container">
+            <h2 class="section-title">What Our Customers Say</h2>
+            <div class="testimonials-slider">
+                <div class="testimonial active">
+                    <div class="testimonial-content">
+                        <p>"RentWheels made my vacation so much easier! The booking process was smooth and the vehicle
+                            was
+                            in perfect condition."</p>
+                        <div class="testimonial-author">
+                            <img src="https://i.pravatar.cc/150?img=1" alt="Sarah Johnson">
+                            <div class="author-info">
+                                <h4>Mohan Singh</h4>
+                                <span>Business Traveler</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial">
+                    <div class="testimonial-content">
+                        <p>"I've rented from RentWheels multiple times and they never disappoint. Great prices and
+                            excellent customer service!"</p>
+                        <div class="testimonial-author">
+                            <img src="https://i.pravatar.cc/150?img=2" alt="Michael Chen">
+                            <div class="author-info">
+                                <h4>Michael Chen</h4>
+                                <span>Frequent Renter</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial">
+                    <div class="testimonial-content">
+                        <p>"The SUV I rented was perfect for our family road trip. Clean, comfortable, and reliable.
+                            Will definitely use again!"</p>
+                        <div class="testimonial-author">
+                            <img src="https://i.pravatar.cc/150?img=3" alt="Emily Rodriguez">
+                            <div class="author-info">
+                                <h4>Abhi Kumar</h4>
+                                <span>Family Vacationer</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial">
+                    <div class="testimonial-content">
+                        <p>"Rented a Royal Enfield for my solo trip around Rajkot and it was amazing! Great condition,
+                            easy booking,
+                            and perfect for exploring the city. Highly recommend for motorcycle rentals!"</p>
+                        <div class="testimonial-author">
+                            <img src="https://i.pravatar.cc/150?img=4" alt="Alex Kumar">
+                            <div class="author-info">
+                                <h4>Raju Kumar</h4>
+                                <span>Adventure Seeker</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="testimonial-dots">
+                <span class="dot active" data-index="0"></span>
+                <span class="dot" data-index="1"></span>
+                <span class="dot" data-index="2"></span>
+                <span class="dot" data-index="3"></span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="contact">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <div class="logo">
+                        <i class="fas fa-car"></i>
+                        Rent<span>Wheels</span>
+                    </div>
+                    <p>Your trusted partner for vehicle rentals in Rajkot, Gujarat. We offer a wide range of cars and
+                        motorcycles to suit all your
+                        needs.</p>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-linkedin-in"></i></a>
+                    </div>
+                </div>
+                <div class="footer-section">
+                    <h3>Quick Links</h3>
+                    <ul>
+                        <li><a href="#">Home</a></li>
+                        <li><a href="#vehicles">Vehicles</a></li>
+                        <li><a href="#how-it-works">How It Works</a></li>
+                        <li><a href="#testimonials">Testimonials</a></li>
+                        <li><a href="#contact">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Vehicle Types</h3>
+                    <ul>
+                        <li><a href="#" data-filter="economy">Economy Cars</a></li>
+                        <li><a href="#" data-filter="suv">SUVs</a></li>
+                        <li><a href="#" data-filter="luxury">Luxury Vehicles</a></li>
+                        <li><a href="#" data-filter="sports">Sports Cars</a></li>
+                        <li><a href="#" data-filter="bike">Motorcycles</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Contact Us</h3>
+                    <ul class="contact-info">
+                        <li><i class="fas fa-map-marker-alt"></i> Near Railway Station, Rajkot, Gujarat 360001</li>
+                        <li><i class="fas fa-phone"></i> +91 98765 43210</li>
+                        <li><i class="fas fa-envelope"></i> info@rentwheelsrajkot.com</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="copyright">
+                &copy; 2025 RentWheels. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Login Modal -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Login to Your Account</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" required>
+                </div>
+                <div class="form-options">
+                    <label class="checkbox">
+                        <input type="checkbox"> Remember me
+                    </label>
+                    <a href="#" class="forgot-password">Forgot password?</a>
+                </div>
+                <button type="submit" class="submit-btn">Login</button>
+                <div class="form-footer">
+                    <p>Don't have an account? <a href="#" id="switchToRegister">Register here</a></p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Registration Modal -->
+    <div class="modal" id="registerModal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Create an Account</h2>
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="regName">Full Name</label>
+                    <input type="text" id="regName" required>
+                </div>
+                <div class="form-group">
+                    <label for="regEmail">Email</label>
+                    <input type="email" id="regEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="regPhone">Phone Number</label>
+                    <input type="tel" id="regPhone" required>
+                </div>
+                <div class="form-group">
+                    <label for="regPassword">Password</label>
+                    <input type="password" id="regPassword" required>
+                </div>
+                <div class="form-group">
+                    <label for="regConfirmPassword">Confirm Password</label>
+                    <input type="password" id="regConfirmPassword" required>
+                </div>
+                <div class="form-options">
+                    <label class="checkbox">
+                        <input type="checkbox" required> I agree to the <a href="#">Terms & Conditions</a>
+                    </label>
+                </div>
+                <button type="submit" class="submit-btn">Register</button>
+                <div class="form-footer">
+                    <p>Already have an account? <a href="#" id="switchToLogin">Login here</a></p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Booking Modal -->
+    <div class="modal" id="bookingModal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Book Your Vehicle</h2>
+            <form id="bookingForm">
+                <div class="booking-summary">
+                    <div class="vehicle-image-summary">
+                        <img id="bookingVehicleImage" src="" alt="Vehicle">
+                    </div>
+                    <div class="vehicle-details-summary">
+                        <h3 id="bookingVehicleName"></h3>
+                        <div class="vehicle-specs-summary">
+                            <span id="bookingVehicleSpecs"></span>
+                        </div>
+                        <div class="vehicle-price-summary">
+                            <span id="bookingVehiclePrice"></span>/day
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="bookingName">Full Name</label>
+                    <input type="text" id="bookingName" required>
+                </div>
+                <div class="form-group">
+                    <label for="bookingEmail">Email</label>
+                    <input type="email" id="bookingEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="bookingPhone">Phone Number</label>
+                    <input type="tel" id="bookingPhone" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="bookingPickup">Pick-up Date</label>
+                        <input type="date" id="bookingPickup" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="bookingReturn">Return Date</label>
+                        <input type="date" id="bookingReturn" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="bookingLocation">Pick-up Location</label>
+                    <select id="bookingLocation" required>
+                        <option value="">Select Location</option>
+                        <option value="railway-station">Near Railway Station</option>
+                        <option value="airport">Rajkot Airport</option>
+                        <option value="city-center">City Center</option>
+                        <option value="university-road">University Road</option>
+                    </select>
+                </div>
+                <div class="booking-total">
+                    <div class="total-line">
+                        <span>Rental Fee (3 days)</span>
+                        <span id="rentalFee">₹135</span>
+                    </div>
+                    <div class="total-line">
+                        <span>Insurance</span>
+                        <span>₹25</span>
+                    </div>
+                    <div class="total-line">
+                        <span>Taxes & Fees</span>
+                        <span>₹18</span>
+                    </div>
+                    <div class="total-line total">
+                        <span>Total</span>
+                        <span id="bookingTotal">₹178</span>
+                    </div>
+                </div>
+                <button type="submit" class="submit-btn">Complete Booking</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div class="loading-spinner" id="loadingSpinner">
+        <div class="spinner"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
