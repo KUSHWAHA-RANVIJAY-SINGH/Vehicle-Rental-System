@@ -1,0 +1,144 @@
+═══════════════════════════════════════════════════════════════
+           BACKEND SETUP - QUICK REFERENCE GUIDE
+═══════════════════════════════════════════════════════════════
+
+📁 STEP 1: CREATE .env FILE IN Server/ DIRECTORY
+───────────────────────────────────────────────────────────────
+
+Create a file named ".env" in the Server/ folder with this content:
+
+───────────────────────────────────────────────────────────────
+PORT=5000
+
+# MongoDB Connection (Choose ONE)
+# Option 1: Local MongoDB
+MONGODB_URI=mongodb://localhost:27017/vehicle_rental
+
+# Option 2: MongoDB Atlas (Cloud) - Uncomment and use this:
+# MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/vehicle_rental?retryWrites=true&w=majority
+
+# JWT Secret Key (Generate a random string)
+# Generate one: openssl rand -base64 32
+JWT_SECRET=your_super_secret_jwt_key_123456789_change_this
+
+# Stripe Keys (Get from https://dashboard.stripe.com/test/apikeys)
+STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key_here
+STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key_here
+
+# Frontend URL
+FRONTEND_URL=http://localhost:5173
+───────────────────────────────────────────────────────────────
+
+📦 STEP 2: INSTALL DEPENDENCIES
+───────────────────────────────────────────────────────────────
+
+cd Server
+npm install
+
+This will install:
+- express (web framework)
+- mongoose (MongoDB driver)
+- bcryptjs (password hashing)
+- jsonwebtoken (JWT authentication)
+- express-validator (input validation)
+- cors (Cross-Origin Resource Sharing)
+- dotenv (environment variables)
+- stripe (payment processing)
+- nodemon (development auto-reload)
+
+🗄️ STEP 3: SET UP MONGODB
+───────────────────────────────────────────────────────────────
+
+OPTION A: Local MongoDB
+────────────────────────
+1. Download MongoDB: https://www.mongodb.com/try/download/community
+2. Install MongoDB
+3. Start MongoDB service
+4. Use in .env: MONGODB_URI=mongodb://localhost:27017/vehicle_rental
+
+OPTION B: MongoDB Atlas (Cloud - FREE)
+──────────────────────────────────────
+1. Go to: https://www.mongodb.com/cloud/atlas/register
+2. Create free account
+3. Create a cluster (FREE tier)
+4. Click "Connect" → "Connect your application"
+5. Copy connection string
+6. Replace <password> with your password
+7. Add to .env: MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/vehicle_rental
+
+💳 STEP 4: SET UP STRIPE (For Payments)
+───────────────────────────────────────────────────────────────
+
+1. Go to: https://stripe.com/ and create account (FREE)
+2. Go to: https://dashboard.stripe.com/test/apikeys
+3. Copy "Publishable key" (starts with pk_test_)
+4. Copy "Secret key" (starts with sk_test_)
+5. Add both to Server/.env file
+6. Also add publishable key to Client/.env:
+   VITE_STRIPE_PUBLISHABLE_KEY=pk_test_your_key_here
+
+🔑 STEP 5: GENERATE JWT SECRET
+───────────────────────────────────────────────────────────────
+
+Generate a secure random string:
+
+On Mac/Linux:
+  openssl rand -base64 32
+
+Or use any random string generator (at least 32 characters)
+
+Add to .env: JWT_SECRET=your_generated_key_here
+
+🚀 STEP 6: START THE SERVER
+───────────────────────────────────────────────────────────────
+
+Development mode (auto-reload):
+  npm run dev
+
+Production mode:
+  npm start
+
+You should see:
+  ✅ MongoDB connected
+  ✅ Server running on port 5000
+
+👤 STEP 7: CREATE ADMIN USER
+───────────────────────────────────────────────────────────────
+
+After server starts successfully, run:
+
+  npm run create-admin
+
+This creates:
+  Username: admin
+  Email: admin@rentwheels.com
+  Password: admin123
+
+⚠️  IMPORTANT: Change password after first login!
+
+✅ STEP 8: TEST THE SERVER
+───────────────────────────────────────────────────────────────
+
+Open browser: http://localhost:5000/api/health
+
+Should return: {"message":"Server is running"}
+
+═══════════════════════════════════════════════════════════════
+                      COMPLETE SETUP CHECKLIST
+═══════════════════════════════════════════════════════════════
+
+☐ Created Server/.env file
+☐ Installed dependencies (npm install)
+☐ Set up MongoDB (local or Atlas)
+☐ Added MongoDB URI to .env
+☐ Set up Stripe account
+☐ Added Stripe keys to .env
+☐ Generated JWT_SECRET
+☐ Added JWT_SECRET to .env
+☐ Started server (npm run dev)
+☐ Server running without errors
+☐ Created admin user (npm run create-admin)
+☐ Tested /api/health endpoint
+
+═══════════════════════════════════════════════════════════════
+
