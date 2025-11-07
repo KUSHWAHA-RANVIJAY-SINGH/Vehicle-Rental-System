@@ -109,7 +109,23 @@ const VehicleDetail = () => {
     );
   }
 
-  const imageUrl = currentVehicle.images?.[0] || '/placeholder-car.jpg';
+  // Default placeholder images
+  const defaultCarImage = 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&h=600&fit=crop';
+  const defaultBikeImage = 'https://images.unsplash.com/photo-1558980664-1db506751751?w=800&h=600&fit=crop';
+  
+  // Get image URL with proper fallback
+  const getImageUrl = () => {
+    if (currentVehicle.images && currentVehicle.images.length > 0 && currentVehicle.images[0]) {
+      const url = currentVehicle.images[0];
+      // Check if it's a valid URL (starts with http:// or https://)
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        return url;
+      }
+    }
+    return currentVehicle.type === 'car' ? defaultCarImage : defaultBikeImage;
+  };
+  
+  const imageUrl = getImageUrl();
   const totalPrice = calculateTotalPrice();
 
   return (
@@ -121,23 +137,38 @@ const VehicleDetail = () => {
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
               <img
                 src={imageUrl}
-                alt={currentVehicle.name}
-                className="w-full h-96 object-cover"
+                alt={currentVehicle.name || 'Vehicle'}
+                className="w-full h-96 object-cover rounded-lg"
                 onError={(e) => {
-                  e.target.src = 'https://via.placeholder.com/800x600?text=Vehicle';
+                  // Prevent infinite loop by checking if already using fallback
+                  if (e.target.src !== defaultCarImage && e.target.src !== defaultBikeImage) {
+                    e.target.src = currentVehicle.type === 'car' ? defaultCarImage : defaultBikeImage;
+                  }
                 }}
+                loading="eager"
               />
             </div>
             {currentVehicle.images?.length > 1 && (
               <div className="grid grid-cols-4 gap-2 mt-4">
-                {currentVehicle.images.slice(1, 5).map((img, idx) => (
-                  <img
-                    key={idx}
-                    src={img}
-                    alt={`${currentVehicle.name} ${idx + 2}`}
-                    className="w-full h-20 object-cover rounded cursor-pointer hover:opacity-75"
-                  />
-                ))}
+                {currentVehicle.images.slice(1, 5).map((img, idx) => {
+                  const thumbnailUrl = (img && (img.startsWith('http://') || img.startsWith('https://'))) 
+                    ? img 
+                    : (currentVehicle.type === 'car' ? defaultCarImage : defaultBikeImage);
+                  return (
+                    <img
+                      key={idx}
+                      src={thumbnailUrl}
+                      alt={`${currentVehicle.name} ${idx + 2}`}
+                      className="w-full h-20 object-cover rounded cursor-pointer hover:opacity-75 transition-opacity"
+                      onError={(e) => {
+                        if (e.target.src !== defaultCarImage && e.target.src !== defaultBikeImage) {
+                          e.target.src = currentVehicle.type === 'car' ? defaultCarImage : defaultBikeImage;
+                        }
+                      }}
+                      loading="lazy"
+                    />
+                  );
+                })}
               </div>
             )}
           </div>

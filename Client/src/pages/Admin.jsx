@@ -114,15 +114,37 @@ const Admin = () => {
               <Loader />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {vehicles.map((vehicle) => (
+                {vehicles.map((vehicle) => {
+                  const defaultCarImage = 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&h=600&fit=crop';
+                  const defaultBikeImage = 'https://images.unsplash.com/photo-1558980664-1db506751751?w=800&h=600&fit=crop';
+                  
+                  // Get image URL with proper fallback
+                  const getImageUrl = () => {
+                    if (vehicle.images && vehicle.images.length > 0 && vehicle.images[0]) {
+                      const url = vehicle.images[0];
+                      // Check if it's a valid URL (starts with http:// or https://)
+                      if (url.startsWith('http://') || url.startsWith('https://')) {
+                        return url;
+                      }
+                    }
+                    return vehicle.type === 'car' ? defaultCarImage : defaultBikeImage;
+                  };
+                  
+                  const imageUrl = getImageUrl();
+                  
+                  return (
                   <div key={vehicle._id} className="bg-white rounded-lg shadow-md p-4">
                     <img
-                      src={vehicle.images?.[0] || '/placeholder.jpg'}
-                      alt={vehicle.name}
+                      src={imageUrl}
+                      alt={vehicle.name || 'Vehicle'}
                       className="w-full h-48 object-cover rounded-lg mb-4"
                       onError={(e) => {
-                        e.target.src = 'https://via.placeholder.com/400x300?text=Vehicle';
+                        // Prevent infinite loop by checking if already using fallback
+                        if (e.target.src !== defaultCarImage && e.target.src !== defaultBikeImage) {
+                          e.target.src = vehicle.type === 'car' ? defaultCarImage : defaultBikeImage;
+                        }
                       }}
+                      loading="lazy"
                     />
                     <h3 className="text-xl font-bold mb-2">{vehicle.name}</h3>
                     <p className="text-gray-600 mb-2">
@@ -148,7 +170,8 @@ const Admin = () => {
                       </button>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

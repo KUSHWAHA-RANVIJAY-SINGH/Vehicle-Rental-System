@@ -2,19 +2,39 @@ import { Link } from 'react-router-dom';
 import { FaCar, FaMotorcycle, FaMapMarkerAlt, FaStar } from 'react-icons/fa';
 
 const VehicleCard = ({ vehicle }) => {
-  const imageUrl = vehicle.images?.[0] || '/placeholder-car.jpg';
+  // Default placeholder images based on vehicle type
+  const defaultCarImage = 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&h=600&fit=crop';
+  const defaultBikeImage = 'https://images.unsplash.com/photo-1558980664-1db506751751?w=800&h=600&fit=crop';
+  
+  // Get image URL with proper fallback
+  const getImageUrl = () => {
+    if (vehicle.images && vehicle.images.length > 0 && vehicle.images[0]) {
+      const url = vehicle.images[0];
+      // Check if it's a valid URL (starts with http:// or https://)
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        return url;
+      }
+    }
+    return vehicle.type === 'car' ? defaultCarImage : defaultBikeImage;
+  };
+  
+  const imageUrl = getImageUrl();
 
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300">
       <Link to={`/vehicles/${vehicle._id}`}>
-        <div className="relative h-48 bg-gray-200">
+        <div className="relative h-48 bg-gray-200 overflow-hidden">
           <img
             src={imageUrl}
-            alt={vehicle.name}
-            className="w-full h-full object-cover"
+            alt={vehicle.name || 'Vehicle'}
+            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
             onError={(e) => {
-              e.target.src = 'https://via.placeholder.com/400x300?text=Vehicle';
+              // Prevent infinite loop by checking if already using fallback
+              if (e.target.src !== defaultCarImage && e.target.src !== defaultBikeImage) {
+                e.target.src = vehicle.type === 'car' ? defaultCarImage : defaultBikeImage;
+              }
             }}
+            loading="lazy"
           />
           <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded">
             <span className="text-sm font-semibold text-blue-600">

@@ -244,9 +244,12 @@ const VehicleForm = ({ vehicle, onSuccess }) => {
           type="text"
           value={formData.images.join(', ')}
           onChange={handleImageChange}
-          placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"
+          placeholder="https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800, https://images.unsplash.com/photo-1617531653332-bd46c24f2068?w=800"
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
+        <p className="mt-1 text-xs text-gray-500">
+          Tip: Use Unsplash URLs for free high-quality images. Separate multiple URLs with commas.
+        </p>
       </div>
 
       <div>
