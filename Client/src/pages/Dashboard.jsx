@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchUserBookings } from '../store/slices/bookingSlice';
 import Loader from '../components/Loader';
-import { FaCalendar, FaMapMarkerAlt, FaDollarSign, FaCheckCircle, FaTimesCircle, FaClock } from 'react-icons/fa';
+import { FaCalendar, FaMapMarkerAlt, FaRupeeSign, FaCheckCircle, FaTimesCircle, FaClock } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 
 const Dashboard = () => {
@@ -124,8 +124,8 @@ const Dashboard = () => {
                       </span>
                     </div>
                     <div className="flex items-center text-gray-600">
-                      <FaDollarSign className="mr-2" />
-                      <span className="font-semibold">Total: ${booking.totalPrice}</span>
+                      <FaRupeeSign className="mr-2" />
+                      <span className="font-semibold">Total: ₹{booking.totalPrice}</span>
                     </div>
                     <div className="flex items-center text-gray-600">
                       <FaMapMarkerAlt className="mr-2" />

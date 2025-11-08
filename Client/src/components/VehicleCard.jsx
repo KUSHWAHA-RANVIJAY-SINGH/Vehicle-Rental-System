@@ -5,7 +5,7 @@ const VehicleCard = ({ vehicle }) => {
   // Default placeholder images based on vehicle type
   const defaultCarImage = 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&h=600&fit=crop';
   const defaultBikeImage = 'https://images.unsplash.com/photo-1558980664-1db506751751?w=800&h=600&fit=crop';
-  
+
   // Get image URL with proper fallback
   const getImageUrl = () => {
     if (vehicle.images && vehicle.images.length > 0 && vehicle.images[0]) {
@@ -17,7 +17,7 @@ const VehicleCard = ({ vehicle }) => {
     }
     return vehicle.type === 'car' ? defaultCarImage : defaultBikeImage;
   };
-  
+
   const imageUrl = getImageUrl();
 
   return (
@@ -38,7 +38,7 @@ const VehicleCard = ({ vehicle }) => {
           />
           <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded">
             <span className="text-sm font-semibold text-blue-600">
-              ${vehicle.pricePerDay}/day
+              ₹{vehicle.pricePerDay}/day
             </span>
           </div>
           <div className="absolute top-2 left-2">
@@ -70,11 +70,10 @@ const VehicleCard = ({ vehicle }) => {
             <span className="text-sm text-gray-600">4.5</span>
           </div>
           <span
-            className={`px-2 py-1 rounded text-xs font-semibold ${
-              vehicle.available
+            className={`px-2 py-1 rounded text-xs font-semibold ${vehicle.available
                 ? 'bg-green-100 text-green-800'
                 : 'bg-red-100 text-red-800'
-            }`}
+              }`}
           >
             {vehicle.available ? 'Available' : 'Unavailable'}
           </span>

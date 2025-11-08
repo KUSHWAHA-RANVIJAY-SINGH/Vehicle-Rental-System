@@ -1,4 +1,4 @@
-import { FaCar, FaShieldAlt, FaClock, FaStar, FaUsers, FaDollarSign } from 'react-icons/fa';
+import { FaCar, FaShieldAlt, FaClock, FaStar, FaUsers, FaRupeeSign } from 'react-icons/fa';
 
 const About = () => {
   return (
@@ -46,7 +46,7 @@ const About = () => {
                   <span className="text-gray-700">24/7 customer support</span>
                 </li>
                 <li className="flex items-center">
-                  <FaDollarSign className="text-blue-600 mr-3" />
+                  <FaRupeeSign className="text-blue-600 mr-3" />
                   <span className="text-gray-700">Competitive pricing</span>
                 </li>
               </ul>

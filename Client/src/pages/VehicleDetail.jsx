@@ -5,7 +5,7 @@ import { fetchVehicleById, clearCurrentVehicle } from '../store/slices/vehicleSl
 import { createBooking } from '../store/slices/bookingSlice';
 import { createCheckoutSession } from '../store/slices/bookingSlice';
 import Loader from '../components/Loader';
-import { FaCar, FaMotorcycle, FaMapMarkerAlt, FaCalendar, FaDollarSign } from 'react-icons/fa';
+import { FaCar, FaMotorcycle, FaMapMarkerAlt, FaCalendar, FaRupeeSign } from 'react-icons/fa';
 // Stripe will be loaded dynamically when needed
 
 const VehicleDetail = () => {
@@ -89,14 +89,17 @@ const VehicleDetail = () => {
         })
       ).unwrap();
 
-      // Create Stripe checkout session
+      // Create dummy checkout session
       const session = await dispatch(createCheckoutSession(booking._id)).unwrap();
 
-      if (session.url) {
+      if (session.success) {
+        navigate('/booking-success?session_id=dummy_success');
+      } else if (session.url) {
         window.location.href = session.url;
       }
     } catch (error) {
-      alert(error || 'Failed to create booking');
+      const errorMessage = error?.response?.data?.message || error?.message || 'Booking failed. Please try again.';
+      alert(errorMessage);
     }
   };
 
@@ -112,7 +115,7 @@ const VehicleDetail = () => {
   // Default placeholder images
   const defaultCarImage = 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&h=600&fit=crop';
   const defaultBikeImage = 'https://images.unsplash.com/photo-1558980664-1db506751751?w=800&h=600&fit=crop';
-  
+
   // Get image URL with proper fallback
   const getImageUrl = () => {
     if (currentVehicle.images && currentVehicle.images.length > 0 && currentVehicle.images[0]) {
@@ -124,7 +127,7 @@ const VehicleDetail = () => {
     }
     return currentVehicle.type === 'car' ? defaultCarImage : defaultBikeImage;
   };
-  
+
   const imageUrl = getImageUrl();
   const totalPrice = calculateTotalPrice();
 
@@ -151,8 +154,8 @@ const VehicleDetail = () => {
             {currentVehicle.images?.length > 1 && (
               <div className="grid grid-cols-4 gap-2 mt-4">
                 {currentVehicle.images.slice(1, 5).map((img, idx) => {
-                  const thumbnailUrl = (img && (img.startsWith('http://') || img.startsWith('https://'))) 
-                    ? img 
+                  const thumbnailUrl = (img && (img.startsWith('http://') || img.startsWith('https://')))
+                    ? img
                     : (currentVehicle.type === 'car' ? defaultCarImage : defaultBikeImage);
                   return (
                     <img
@@ -179,7 +182,7 @@ const VehicleDetail = () => {
               <div className="flex items-center justify-between mb-4">
                 <h1 className="text-3xl font-bold text-gray-800">{currentVehicle.name}</h1>
                 <span className="text-2xl font-bold text-blue-600">
-                  ${currentVehicle.pricePerDay}/day
+                  ₹{currentVehicle.pricePerDay}/day
                 </span>
               </div>
 
@@ -233,11 +236,10 @@ const VehicleDetail = () => {
                 </div>
               )}
 
-              <div className={`inline-block px-4 py-2 rounded-full font-semibold ${
-                currentVehicle.available
-                  ? 'bg-green-100 text-green-800'
-                  : 'bg-red-100 text-red-800'
-              }`}>
+              <div className={`inline-block px-4 py-2 rounded-full font-semibold ${currentVehicle.available
+                ? 'bg-green-100 text-green-800'
+                : 'bg-red-100 text-red-800'
+                }`}>
                 {currentVehicle.available ? 'Available' : 'Unavailable'}
               </div>
             </div>
@@ -257,9 +259,8 @@ const VehicleDetail = () => {
                       value={bookingData.pickupDate}
                       onChange={handleInputChange}
                       min={new Date().toISOString().split('T')[0]}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-                        errors.pickupDate ? 'border-red-500' : 'border-gray-300 focus:ring-blue-500'
-                      }`}
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${errors.pickupDate ? 'border-red-500' : 'border-gray-300 focus:ring-blue-500'
+                        }`}
                     />
                     {errors.pickupDate && (
                       <p className="text-red-500 text-sm mt-1">{errors.pickupDate}</p>
@@ -276,9 +277,8 @@ const VehicleDetail = () => {
                       value={bookingData.dropoffDate}
                       onChange={handleInputChange}
                       min={bookingData.pickupDate || new Date().toISOString().split('T')[0]}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-                        errors.dropoffDate ? 'border-red-500' : 'border-gray-300 focus:ring-blue-500'
-                      }`}
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${errors.dropoffDate ? 'border-red-500' : 'border-gray-300 focus:ring-blue-500'
+                        }`}
                     />
                     {errors.dropoffDate && (
                       <p className="text-red-500 text-sm mt-1">{errors.dropoffDate}</p>
@@ -295,11 +295,10 @@ const VehicleDetail = () => {
                       value={bookingData.pickupLocation}
                       onChange={handleInputChange}
                       placeholder="Enter pickup location"
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-                        errors.pickupLocation
-                          ? 'border-red-500'
-                          : 'border-gray-300 focus:ring-blue-500'
-                      }`}
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${errors.pickupLocation
+                        ? 'border-red-500'
+                        : 'border-gray-300 focus:ring-blue-500'
+                        }`}
                     />
                     {errors.pickupLocation && (
                       <p className="text-red-500 text-sm mt-1">{errors.pickupLocation}</p>
@@ -316,11 +315,10 @@ const VehicleDetail = () => {
                       value={bookingData.dropoffLocation}
                       onChange={handleInputChange}
                       placeholder="Enter dropoff location"
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-                        errors.dropoffLocation
-                          ? 'border-red-500'
-                          : 'border-gray-300 focus:ring-blue-500'
-                      }`}
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${errors.dropoffLocation
+                        ? 'border-red-500'
+                        : 'border-gray-300 focus:ring-blue-500'
+                        }`}
                     />
                     {errors.dropoffLocation && (
                       <p className="text-red-500 text-sm mt-1">{errors.dropoffLocation}</p>
@@ -331,7 +329,7 @@ const VehicleDetail = () => {
                     <div className="bg-blue-50 p-4 rounded-lg">
                       <div className="flex justify-between items-center">
                         <span className="font-semibold text-gray-700">Total Price:</span>
-                        <span className="text-2xl font-bold text-blue-600">${totalPrice}</span>
+                        <span className="text-2xl font-bold text-blue-600">₹{totalPrice}</span>
                       </div>
                     </div>
                   )}

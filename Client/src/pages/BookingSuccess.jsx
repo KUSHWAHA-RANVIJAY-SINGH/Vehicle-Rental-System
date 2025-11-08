@@ -10,6 +10,11 @@ const BookingSuccess = () => {
 
   useEffect(() => {
     const confirmPayment = async () => {
+      if (sessionId === 'dummy_success') {
+        // For dummy payments, we don't need to confirm with the server
+        return;
+      }
+
       if (sessionId) {
         try {
           await api.post('/payment/confirm', { sessionId });

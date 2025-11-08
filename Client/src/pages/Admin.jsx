@@ -53,7 +53,7 @@ const Admin = () => {
           </div>
           <div className="bg-white rounded-lg shadow-md p-6">
             <h3 className="text-gray-600 mb-2">Total Revenue</h3>
-            <p className="text-3xl font-bold text-green-600">${totalRevenue.toFixed(2)}</p>
+            <p className="text-3xl font-bold text-green-600">₹{totalRevenue.toFixed(2)}</p>
           </div>
           <div className="bg-white rounded-lg shadow-md p-6">
             <h3 className="text-gray-600 mb-2">Active Bookings</h3>
@@ -71,21 +71,19 @@ const Admin = () => {
             <nav className="flex -mb-px">
               <button
                 onClick={() => setActiveTab('vehicles')}
-                className={`py-4 px-6 font-medium ${
-                  activeTab === 'vehicles'
+                className={`py-4 px-6 font-medium ${activeTab === 'vehicles'
                     ? 'border-b-2 border-blue-600 text-blue-600'
                     : 'text-gray-500 hover:text-gray-700'
-                }`}
+                  }`}
               >
                 Vehicles
               </button>
               <button
                 onClick={() => setActiveTab('bookings')}
-                className={`py-4 px-6 font-medium ${
-                  activeTab === 'bookings'
+                className={`py-4 px-6 font-medium ${activeTab === 'bookings'
                     ? 'border-b-2 border-blue-600 text-blue-600'
                     : 'text-gray-500 hover:text-gray-700'
-                }`}
+                  }`}
               >
                 Bookings
               </button>
@@ -117,7 +115,7 @@ const Admin = () => {
                 {vehicles.map((vehicle) => {
                   const defaultCarImage = 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&h=600&fit=crop';
                   const defaultBikeImage = 'https://images.unsplash.com/photo-1558980664-1db506751751?w=800&h=600&fit=crop';
-                  
+
                   // Get image URL with proper fallback
                   const getImageUrl = () => {
                     if (vehicle.images && vehicle.images.length > 0 && vehicle.images[0]) {
@@ -129,47 +127,47 @@ const Admin = () => {
                     }
                     return vehicle.type === 'car' ? defaultCarImage : defaultBikeImage;
                   };
-                  
+
                   const imageUrl = getImageUrl();
-                  
+
                   return (
-                  <div key={vehicle._id} className="bg-white rounded-lg shadow-md p-4">
-                    <img
-                      src={imageUrl}
-                      alt={vehicle.name || 'Vehicle'}
-                      className="w-full h-48 object-cover rounded-lg mb-4"
-                      onError={(e) => {
-                        // Prevent infinite loop by checking if already using fallback
-                        if (e.target.src !== defaultCarImage && e.target.src !== defaultBikeImage) {
-                          e.target.src = vehicle.type === 'car' ? defaultCarImage : defaultBikeImage;
-                        }
-                      }}
-                      loading="lazy"
-                    />
-                    <h3 className="text-xl font-bold mb-2">{vehicle.name}</h3>
-                    <p className="text-gray-600 mb-2">
-                      {vehicle.brand} {vehicle.model} - ${vehicle.pricePerDay}/day
-                    </p>
-                    <div className="flex space-x-2 mt-4">
-                      <button
-                        onClick={() => {
-                          setEditingVehicle(vehicle);
-                          setShowVehicleModal(true);
+                    <div key={vehicle._id} className="bg-white rounded-lg shadow-md p-4">
+                      <img
+                        src={imageUrl}
+                        alt={vehicle.name || 'Vehicle'}
+                        className="w-full h-48 object-cover rounded-lg mb-4"
+                        onError={(e) => {
+                          // Prevent infinite loop by checking if already using fallback
+                          if (e.target.src !== defaultCarImage && e.target.src !== defaultBikeImage) {
+                            e.target.src = vehicle.type === 'car' ? defaultCarImage : defaultBikeImage;
+                          }
                         }}
-                        className="flex-1 bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 transition flex items-center justify-center"
-                      >
-                        <FaEdit className="mr-1" />
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDeleteVehicle(vehicle._id)}
-                        className="flex-1 bg-red-600 text-white px-3 py-2 rounded hover:bg-red-700 transition flex items-center justify-center"
-                      >
-                        <FaTrash className="mr-1" />
-                        Delete
-                      </button>
+                        loading="lazy"
+                      />
+                      <h3 className="text-xl font-bold mb-2">{vehicle.name}</h3>
+                      <p className="text-gray-600 mb-2">
+                        {vehicle.brand} {vehicle.model} - ₹{vehicle.pricePerDay}/day
+                      </p>
+                      <div className="flex space-x-2 mt-4">
+                        <button
+                          onClick={() => {
+                            setEditingVehicle(vehicle);
+                            setShowVehicleModal(true);
+                          }}
+                          className="flex-1 bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 transition flex items-center justify-center"
+                        >
+                          <FaEdit className="mr-1" />
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteVehicle(vehicle._id)}
+                          className="flex-1 bg-red-600 text-white px-3 py-2 rounded hover:bg-red-700 transition flex items-center justify-center"
+                        >
+                          <FaTrash className="mr-1" />
+                          Delete
+                        </button>
+                      </div>
                     </div>
-                  </div>
                   );
                 })}
               </div>
@@ -197,24 +195,22 @@ const Admin = () => {
                       </div>
                       <div className="flex items-center space-x-2 mt-4 md:mt-0">
                         <span
-                          className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                            booking.status === 'confirmed'
+                          className={`px-3 py-1 rounded-full text-sm font-semibold ${booking.status === 'confirmed'
                               ? 'bg-green-100 text-green-800'
                               : booking.status === 'pending'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : booking.status === 'cancelled'
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-blue-100 text-blue-800'
-                          }`}
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : booking.status === 'cancelled'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-blue-100 text-blue-800'
+                            }`}
                         >
                           {booking.status}
                         </span>
                         <span
-                          className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                            booking.paymentStatus === 'paid'
+                          className={`px-3 py-1 rounded-full text-sm font-semibold ${booking.paymentStatus === 'paid'
                               ? 'bg-green-100 text-green-800'
                               : 'bg-yellow-100 text-yellow-800'
-                          }`}
+                            }`}
                         >
                           {booking.paymentStatus}
                         </span>
@@ -227,7 +223,7 @@ const Admin = () => {
                           Dates: {new Date(booking.pickupDate).toLocaleDateString()} -{' '}
                           {new Date(booking.dropoffDate).toLocaleDateString()}
                         </p>
-                        <p className="text-gray-600">Total: ${booking.totalPrice}</p>
+                        <p className="text-gray-600">Total: ₹{booking.totalPrice}</p>
                       </div>
                       <div>
                         <p className="text-gray-600">Pickup: {booking.pickupLocation}</p>

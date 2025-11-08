@@ -10,7 +10,23 @@ export const register = createAsyncThunk(
       localStorage.setItem('user', JSON.stringify(response.data.user));
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Registration failed');
+      // Handle validation errors and regular errors
+      let errorMessage = 'Registration failed';
+      
+      if (error.response?.data) {
+        // Server responded with error
+        errorMessage = error.response.data.message || 
+                      (error.response.data.errors && error.response.data.errors.map(e => e.msg).join(', ')) ||
+                      'Registration failed';
+      } else if (error.request) {
+        // Request was made but no response received
+        errorMessage = 'Unable to connect to server. Please check if the server is running.';
+      } else {
+        // Error setting up the request
+        errorMessage = error.message || 'Registration failed';
+      }
+      
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -24,7 +40,23 @@ export const login = createAsyncThunk(
       localStorage.setItem('user', JSON.stringify(response.data.user));
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Login failed');
+      // Handle validation errors and regular errors
+      let errorMessage = 'Login failed';
+      
+      if (error.response?.data) {
+        // Server responded with error
+        errorMessage = error.response.data.message || 
+                      (error.response.data.errors && error.response.data.errors.map(e => e.msg).join(', ')) ||
+                      'Login failed';
+      } else if (error.request) {
+        // Request was made but no response received
+        errorMessage = 'Unable to connect to server. Please check if the server is running.';
+      } else {
+        // Error setting up the request
+        errorMessage = error.message || 'Login failed';
+      }
+      
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -41,8 +73,18 @@ export const getProfile = createAsyncThunk(
   }
 );
 
+// Safely parse user from localStorage
+const getUserFromStorage = () => {
+  try {
+    const user = localStorage.getItem('user');
+    return user ? JSON.parse(user) : null;
+  } catch (error) {
+    return null;
+  }
+};
+
 const initialState = {
-  user: JSON.parse(localStorage.getItem('user')) || null,
+  user: getUserFromStorage(),
   token: localStorage.getItem('token') || null,
   isAuthenticated: !!localStorage.getItem('token'),
   loading: false,

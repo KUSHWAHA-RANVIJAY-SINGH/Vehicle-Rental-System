@@ -68,7 +68,13 @@ export const createCheckoutSession = createAsyncThunk(
       const response = await api.post('/payment/create-checkout-session', { bookingId });
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to create checkout session');
+      let errorMessage = 'Payment setup failed. Please try again.';
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      return rejectWithValue(errorMessage);
     }
   }
 );
