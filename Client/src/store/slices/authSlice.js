@@ -12,12 +12,12 @@ export const register = createAsyncThunk(
     } catch (error) {
       // Handle validation errors and regular errors
       let errorMessage = 'Registration failed';
-      
+
       if (error.response?.data) {
         // Server responded with error
-        errorMessage = error.response.data.message || 
-                      (error.response.data.errors && error.response.data.errors.map(e => e.msg).join(', ')) ||
-                      'Registration failed';
+        errorMessage = error.response.data.message ||
+          (error.response.data.errors && error.response.data.errors.map(e => e.msg).join(', ')) ||
+          'Registration failed';
       } else if (error.request) {
         // Request was made but no response received
         errorMessage = 'Unable to connect to server. Please check if the server is running.';
@@ -25,7 +25,7 @@ export const register = createAsyncThunk(
         // Error setting up the request
         errorMessage = error.message || 'Registration failed';
       }
-      
+
       return rejectWithValue(errorMessage);
     }
   }
@@ -42,12 +42,12 @@ export const login = createAsyncThunk(
     } catch (error) {
       // Handle validation errors and regular errors
       let errorMessage = 'Login failed';
-      
+
       if (error.response?.data) {
         // Server responded with error
-        errorMessage = error.response.data.message || 
-                      (error.response.data.errors && error.response.data.errors.map(e => e.msg).join(', ')) ||
-                      'Login failed';
+        errorMessage = error.response.data.message ||
+          (error.response.data.errors && error.response.data.errors.map(e => e.msg).join(', ')) ||
+          'Login failed';
       } else if (error.request) {
         // Request was made but no response received
         errorMessage = 'Unable to connect to server. Please check if the server is running.';
@@ -55,7 +55,7 @@ export const login = createAsyncThunk(
         // Error setting up the request
         errorMessage = error.message || 'Login failed';
       }
-      
+
       return rejectWithValue(errorMessage);
     }
   }
@@ -69,6 +69,18 @@ export const getProfile = createAsyncThunk(
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to get profile');
+    }
+  }
+);
+
+export const updateProfile = createAsyncThunk(
+  'auth/updateProfile',
+  async (userData, { rejectWithValue }) => {
+    try {
+      const response = await api.put('/auth/profile', userData);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to update profile');
     }
   }
 );
@@ -147,6 +159,20 @@ const authSlice = createSlice({
         state.user = action.payload;
       })
       .addCase(getProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Update Profile
+      .addCase(updateProfile.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateProfile.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = { ...state.user, ...action.payload };
+        localStorage.setItem('user', JSON.stringify(state.user));
+      })
+      .addCase(updateProfile.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

@@ -39,6 +39,7 @@ router.post('/', protect, [
     const dropoff = new Date(dropoffDate);
     const diffTime = Math.abs(dropoff - pickup);
     const totalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    // Calculate total price in INR
     const totalPrice = totalDays * vehicleData.pricePerDay;
 
     const booking = await Booking.create({

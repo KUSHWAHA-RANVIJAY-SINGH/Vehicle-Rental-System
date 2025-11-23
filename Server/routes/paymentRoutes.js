@@ -25,37 +25,34 @@ router.post('/create-checkout-session', protect, async (req, res) => {
       return res.status(403).json({ message: 'Access denied' });
     }
 
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: `${booking.vehicle.name} - ${booking.vehicle.brand} ${booking.vehicle.model}`,
-              description: `Rental from ${booking.pickupDate.toLocaleDateString()} to ${booking.dropoffDate.toLocaleDateString()}`,
-            },
-            unit_amount: Math.round(booking.totalPrice * 100), // Convert to cents
-          },
-          quantity: 1,
-        },
-      ],
-      mode: 'payment',
-      success_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/booking-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/vehicles/${booking.vehicle._id}`,
+    // Create a dummy session for testing
+    const dummySession = {
+      id: 'dummy_session_' + Date.now(),
+      url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/booking-success?session_id=dummy_success`,
+      payment_status: 'paid',
       metadata: {
         bookingId: booking._id.toString(),
         userId: req.user._id.toString(),
-      },
-    });
+      }
+    };
 
-    // Save session ID to booking
-    booking.stripeSessionId = session.id;
+    // Save session ID to booking and update status
+    booking.stripeSessionId = dummySession.id;
+    booking.paymentStatus = 'paid';
+    booking.status = 'confirmed';
     await booking.save();
 
-    res.json({ sessionId: session.id, url: session.url });
+    // Simulate a slight delay for realism
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    res.json({
+      sessionId: dummySession.id,
+      url: dummySession.url,
+      success: true,
+      message: 'Booking confirmed successfully!'
+    });
   } catch (error) {
-    console.error('Stripe error:', error);
+    console.error('Payment error:', error);
     res.status(500).json({ message: 'Payment error', error: error.message });
   }
 });
@@ -78,9 +75,9 @@ router.post('/confirm', protect, async (req, res) => {
         booking.status = 'confirmed';
         await booking.save();
 
-        return res.json({ 
+        return res.json({
           message: 'Payment confirmed',
-          booking 
+          booking
         });
       }
     }

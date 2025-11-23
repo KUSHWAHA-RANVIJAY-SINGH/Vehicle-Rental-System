@@ -19,16 +19,25 @@ const Home = () => {
   return (
     <div>
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="relative bg-gray-900 text-white py-32">
+        <div className="absolute inset-0 overflow-hidden">
+          <img
+            src="https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=1920&q=80"
+            alt="Hero Background"
+            className="w-full h-full object-cover opacity-40"
+          />
+        </div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h1 className="text-5xl font-bold mb-4">Find Your Perfect Ride</h1>
-            <p className="text-xl mb-8 text-blue-100">
-              Rent cars and bikes at affordable prices. Quality vehicles, trusted service.
+            <h1 className="text-5xl md:text-6xl font-extrabold mb-6 tracking-tight">
+              Find Your <span className="text-blue-400">Perfect Ride</span>
+            </h1>
+            <p className="text-xl md:text-2xl mb-10 text-gray-200 max-w-2xl mx-auto">
+              Rent premium cars and bikes at affordable prices. Experience the freedom of the road with our trusted service.
             </p>
             <Link
               to="/vehicles"
-              className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition inline-block"
+              className="bg-blue-600 text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-blue-700 transition transform hover:scale-105 shadow-lg"
             >
               Browse Vehicles
             </Link>
@@ -37,28 +46,40 @@ const Home = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-gray-900">Why Choose Us</h2>
+            <p className="mt-4 text-gray-600">We provide the best experience for our customers</p>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="text-center">
-              <FaCar className="text-4xl text-blue-600 mx-auto mb-4" />
-              <h3 className="text-xl font-bold mb-2">Wide Selection</h3>
-              <p className="text-gray-600">Cars and bikes for every need</p>
+            <div className="bg-white p-8 rounded-xl shadow-sm hover:shadow-md transition duration-300 text-center group">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-blue-600 transition duration-300">
+                <FaCar className="text-2xl text-blue-600 group-hover:text-white transition duration-300" />
+              </div>
+              <h3 className="text-xl font-bold mb-3 text-gray-900">Wide Selection</h3>
+              <p className="text-gray-600">Choose from our extensive fleet of premium cars and bikes.</p>
             </div>
-            <div className="text-center">
-              <FaShieldAlt className="text-4xl text-blue-600 mx-auto mb-4" />
-              <h3 className="text-xl font-bold mb-2">Secure Booking</h3>
-              <p className="text-gray-600">Safe and reliable transactions</p>
+            <div className="bg-white p-8 rounded-xl shadow-sm hover:shadow-md transition duration-300 text-center group">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-blue-600 transition duration-300">
+                <FaShieldAlt className="text-2xl text-blue-600 group-hover:text-white transition duration-300" />
+              </div>
+              <h3 className="text-xl font-bold mb-3 text-gray-900">Secure Booking</h3>
+              <p className="text-gray-600">Your safety and security are our top priorities.</p>
             </div>
-            <div className="text-center">
-              <FaClock className="text-4xl text-blue-600 mx-auto mb-4" />
-              <h3 className="text-xl font-bold mb-2">24/7 Support</h3>
-              <p className="text-gray-600">Always here to help you</p>
+            <div className="bg-white p-8 rounded-xl shadow-sm hover:shadow-md transition duration-300 text-center group">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-blue-600 transition duration-300">
+                <FaClock className="text-2xl text-blue-600 group-hover:text-white transition duration-300" />
+              </div>
+              <h3 className="text-xl font-bold mb-3 text-gray-900">24/7 Support</h3>
+              <p className="text-gray-600">Our dedicated team is always here to assist you.</p>
             </div>
-            <div className="text-center">
-              <FaStar className="text-4xl text-blue-600 mx-auto mb-4" />
-              <h3 className="text-xl font-bold mb-2">Best Prices</h3>
-              <p className="text-gray-600">Competitive rental rates</p>
+            <div className="bg-white p-8 rounded-xl shadow-sm hover:shadow-md transition duration-300 text-center group">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-blue-600 transition duration-300">
+                <FaStar className="text-2xl text-blue-600 group-hover:text-white transition duration-300" />
+              </div>
+              <h3 className="text-xl font-bold mb-3 text-gray-900">Best Prices</h3>
+              <p className="text-gray-600">Enjoy competitive rates without compromising on quality.</p>
             </div>
           </div>
         </div>
