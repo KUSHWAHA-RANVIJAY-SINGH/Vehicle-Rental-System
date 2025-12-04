@@ -22,6 +22,13 @@ router.post('/', protect, [
       return res.status(400).json({ errors: errors.array() });
     }
 
+    // Check if user has uploaded documents
+    if (!req.user.drivingLicense || !req.user.aadharCard) {
+      return res.status(400).json({
+        message: 'Please upload your Driving License and Aadhar Card in your profile before booking.'
+      });
+    }
+
     const { vehicle, pickupDate, dropoffDate, pickupLocation, dropoffLocation } = req.body;
 
     // Check if vehicle exists and is available

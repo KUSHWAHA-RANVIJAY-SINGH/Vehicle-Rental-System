@@ -13,7 +13,7 @@ const VehicleDetail = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { currentVehicle, loading } = useSelector((state) => state.vehicles);
-  const { isAuthenticated } = useSelector((state) => state.auth);
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
   const { currentBooking } = useSelector((state) => state.bookings);
 
   const [bookingData, setBookingData] = useState({
@@ -76,6 +76,12 @@ const VehicleDetail = () => {
 
     if (!isAuthenticated) {
       navigate('/login');
+      return;
+    }
+
+    if (!user?.drivingLicense || !user?.aadharCard) {
+      alert('Please upload your Driving License and Aadhar Card in your dashboard before booking.');
+      navigate('/dashboard');
       return;
     }
 

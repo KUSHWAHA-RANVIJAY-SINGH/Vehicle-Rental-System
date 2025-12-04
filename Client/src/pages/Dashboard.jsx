@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchUserBookings } from '../store/slices/bookingSlice';
-import { updateProfile } from '../store/slices/authSlice';
+import { updateProfile, uploadDocuments } from '../store/slices/authSlice';
 import Loader from '../components/Loader';
-import { FaCalendar, FaMapMarkerAlt, FaRupeeSign, FaCheckCircle, FaTimesCircle, FaClock } from 'react-icons/fa';
+import { FaCalendar, FaMapMarkerAlt, FaRupeeSign, FaCheckCircle, FaTimesCircle, FaClock, FaUser, FaEnvelope, FaPhone, FaEdit, FaIdCard, FaFileUpload } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 
 const Dashboard = () => {
@@ -19,6 +19,11 @@ const Dashboard = () => {
     address: '',
   });
 
+  const [docs, setDocs] = useState({
+    drivingLicense: null,
+    aadharCard: null
+  });
+
   useEffect(() => {
     if (user) {
       setFormData({
@@ -29,6 +34,30 @@ const Dashboard = () => {
       });
     }
   }, [user]);
+
+  const handleFileChange = (e) => {
+    setDocs({ ...docs, [e.target.name]: e.target.files[0] });
+  };
+
+  const handleUploadDocs = async (e) => {
+    e.preventDefault();
+    if (!docs.drivingLicense && !docs.aadharCard) {
+      alert('Please select at least one document to upload');
+      return;
+    }
+
+    const data = new FormData();
+    if (docs.drivingLicense) data.append('drivingLicense', docs.drivingLicense);
+    if (docs.aadharCard) data.append('aadharCard', docs.aadharCard);
+
+    try {
+      await dispatch(uploadDocuments(data)).unwrap();
+      alert('Documents uploaded successfully!');
+      setDocs({ drivingLicense: null, aadharCard: null });
+    } catch (error) {
+      alert(error || 'Failed to upload documents');
+    }
+  };
 
   useEffect(() => {
     const userId = user?.id || user?._id;
@@ -176,6 +205,84 @@ const Dashboard = () => {
           )}
         </div>
 
+        {/* Documents Section */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+            <FaIdCard className="mr-3 text-blue-600" />
+            Identity Documents
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Driving License */}
+            <div className="border rounded-lg p-4">
+              <h3 className="font-semibold mb-2">Driving License</h3>
+              {user?.drivingLicense ? (
+                <div className="mb-4">
+                  <p className="text-green-600 text-sm font-medium mb-2">✓ Uploaded</p>
+                  <img
+                    src={`http://localhost:5000/${user.drivingLicense}`}
+                    alt="Driving License"
+                    className="h-32 object-cover rounded border"
+                  />
+                </div>
+              ) : (
+                <p className="text-red-500 text-sm mb-4">Not uploaded</p>
+              )}
+            </div>
+
+            {/* Aadhar Card */}
+            <div className="border rounded-lg p-4">
+              <h3 className="font-semibold mb-2">Aadhar Card</h3>
+              {user?.aadharCard ? (
+                <div className="mb-4">
+                  <p className="text-green-600 text-sm font-medium mb-2">✓ Uploaded</p>
+                  <img
+                    src={`http://localhost:5000/${user.aadharCard}`}
+                    alt="Aadhar Card"
+                    className="h-32 object-cover rounded border"
+                  />
+                </div>
+              ) : (
+                <p className="text-red-500 text-sm mb-4">Not uploaded</p>
+              )}
+            </div>
+          </div>
+
+          <form onSubmit={handleUploadDocs} className="mt-6 border-t pt-6">
+            <h3 className="text-lg font-semibold mb-4">Update Documents</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Driving License</label>
+                <input
+                  type="file"
+                  name="drivingLicense"
+                  onChange={handleFileChange}
+                  accept="image/*,.pdf"
+                  className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Aadhar Card</label>
+                <input
+                  type="file"
+                  name="aadharCard"
+                  onChange={handleFileChange}
+                  accept="image/*,.pdf"
+                  className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                />
+              </div>
+            </div>
+            <button
+              type="submit"
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition flex items-center"
+            >
+              <FaFileUpload className="mr-2" />
+              Upload Documents
+            </button>
+          </form>
+        </div>
+
+        {/* Bookings History */}
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">My Bookings</h2>
           {bookings.length === 0 ? (
@@ -240,6 +347,5 @@ const Dashboard = () => {
     </div>
   );
 };
-
 export default Dashboard;
 

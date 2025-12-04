@@ -136,6 +136,45 @@ router.put('/profile', protect, async (req, res) => {
         role: updatedUser.role,
         phone: updatedUser.phone,
         address: updatedUser.address,
+        drivingLicense: updatedUser.drivingLicense,
+        aadharCard: updatedUser.aadharCard,
+      });
+    } else {
+      res.status(404).json({ message: 'User not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+import upload from '../middleware/uploadMiddleware.js';
+
+// @route   POST /api/auth/upload-documents
+// @desc    Upload user documents (Driving License, Aadhar Card)
+// @access  Private
+router.post('/upload-documents', protect, upload.fields([{ name: 'drivingLicense', maxCount: 1 }, { name: 'aadharCard', maxCount: 1 }]), async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (user) {
+      if (req.files['drivingLicense']) {
+        user.drivingLicense = req.files['drivingLicense'][0].path;
+      }
+      if (req.files['aadharCard']) {
+        user.aadharCard = req.files['aadharCard'][0].path;
+      }
+
+      const updatedUser = await user.save();
+
+      res.json({
+        id: updatedUser._id,
+        username: updatedUser.username,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        phone: updatedUser.phone,
+        address: updatedUser.address,
+        drivingLicense: updatedUser.drivingLicense,
+        aadharCard: updatedUser.aadharCard,
       });
     } else {
       res.status(404).json({ message: 'User not found' });

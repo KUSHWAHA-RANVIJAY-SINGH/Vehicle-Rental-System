@@ -85,6 +85,22 @@ export const updateProfile = createAsyncThunk(
   }
 );
 
+export const uploadDocuments = createAsyncThunk(
+  'auth/uploadDocuments',
+  async (formData, { rejectWithValue }) => {
+    try {
+      const response = await api.post('/auth/upload-documents', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to upload documents');
+    }
+  }
+);
+
 // Safely parse user from localStorage
 const getUserFromStorage = () => {
   try {
@@ -173,6 +189,19 @@ const authSlice = createSlice({
         localStorage.setItem('user', JSON.stringify(state.user));
       })
       .addCase(updateProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(uploadDocuments.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(uploadDocuments.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload;
+        localStorage.setItem('user', JSON.stringify(action.payload));
+      })
+      .addCase(uploadDocuments.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });
