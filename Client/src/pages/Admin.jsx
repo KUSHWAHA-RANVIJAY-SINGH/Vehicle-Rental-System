@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import api from '../utils/axios';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchAllBookings, updateBookingStatus } from '../store/slices/bookingSlice';
 import { fetchVehicles, deleteVehicle } from '../store/slices/vehicleSlice';
@@ -8,7 +9,7 @@ import VehicleForm from '../components/VehicleForm';
 import {
   FaPlus, FaEdit, FaTrash, FaCheckCircle, FaTimesCircle,
   FaCar, FaMoneyBillWave, FaCalendarCheck, FaClock,
-  FaChartLine, FaList, FaBars
+  FaChartLine, FaList, FaBars, FaEnvelope
 } from 'react-icons/fa';
 
 const Admin = () => {
@@ -22,10 +23,26 @@ const Admin = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
+  const [contacts, setContacts] = useState([]);
+  const [contactsLoading, setContactsLoading] = useState(false);
+
   useEffect(() => {
     dispatch(fetchVehicles({}));
     dispatch(fetchAllBookings());
+    fetchContacts();
   }, [dispatch]);
+
+  const fetchContacts = async () => {
+    try {
+      setContactsLoading(true);
+      const { data } = await api.get('/contact');
+      setContacts(data);
+    } catch (error) {
+      console.error('Error fetching contacts:', error);
+    } finally {
+      setContactsLoading(false);
+    }
+  };
 
   // Filter logic
   const filteredVehicles = vehicles.filter(v =>
@@ -38,6 +55,12 @@ const Admin = () => {
     b.vehicle.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (b.user?.username || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     b.status.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredContacts = contacts.filter(c =>
+    c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.message.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleDeleteVehicle = async (id) => {
@@ -105,6 +128,7 @@ const Admin = () => {
           <SidebarItem id="overview" icon={FaChartLine} label="Overview" />
           <SidebarItem id="vehicles" icon={FaCar} label="Vehicles" />
           <SidebarItem id="bookings" icon={FaList} label="Bookings" />
+          <SidebarItem id="messages" icon={FaEnvelope} label="Messages" />
         </nav>
       </aside>
 
@@ -367,6 +391,58 @@ const Admin = () => {
                                   </button>
                                 </div>
                               )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'messages' && (
+            <div className="space-y-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <h2 className="text-2xl font-bold text-gray-800">Messages</h2>
+                <input
+                  type="text"
+                  placeholder="Search messages..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {contactsLoading ? (
+                <Loader />
+              ) : (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Message</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {filteredContacts.map((contact) => (
+                          <tr key={contact._id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {new Date(contact.createdAt).toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {contact.name}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {contact.email}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-500">
+                              <p className="line-clamp-2">{contact.message}</p>
                             </td>
                           </tr>
                         ))}

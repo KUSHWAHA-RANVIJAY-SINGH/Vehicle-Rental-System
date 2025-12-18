@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import api from '../utils/axios';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchVehicleById, clearCurrentVehicle } from '../store/slices/vehicleSlice';
@@ -88,6 +89,7 @@ const VehicleDetail = () => {
     if (!validateForm()) return;
 
     try {
+      // 1. Create Booking (pending)
       const booking = await dispatch(
         createBooking({
           vehicle: id,
@@ -95,14 +97,60 @@ const VehicleDetail = () => {
         })
       ).unwrap();
 
-      // Create dummy checkout session
-      const session = await dispatch(createCheckoutSession(booking._id)).unwrap();
+      // 2. Initiate Razorpay Order
+      const { data: order } = await api.post('/bookings/create-order', {
+        amount: totalPrice,
+        receipt: `receipt_${booking._id}`
+      });
 
-      if (session.success) {
-        navigate('/booking-success?session_id=dummy_success');
-      } else if (session.url) {
-        window.location.href = session.url;
-      }
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        amount: order.amount,
+        currency: order.currency,
+        name: "Vehicle Rental System",
+        description: "Payment for Vehicle Booking",
+        image: "https://example.com/your_logo",
+        order_id: order.id,
+        handler: async function (response) {
+          try {
+            // 3. Verify Payment
+            const { data: verifyData } = await api.post('/bookings/verify-payment', {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              bookingId: booking._id
+            });
+
+            if (verifyData.success) {
+              alert('Payment Successful!');
+              navigate('/dashboard');
+            } else {
+              alert('Payment Verification Failed');
+            }
+          } catch (error) {
+            console.error(error);
+            alert('Payment Verification Failed: ' + (error.response?.data?.message || error.message));
+          }
+        },
+        prefill: {
+          name: user.username,
+          email: user.email,
+          contact: user.phone || ""
+        },
+        notes: {
+          address: "Razorpay Corporate Office"
+        },
+        theme: {
+          color: "#3399cc"
+        }
+      };
+
+      const rzp1 = new window.Razorpay(options);
+      rzp1.on('payment.failed', function (response) {
+        alert(response.error.description);
+      });
+      rzp1.open();
+
     } catch (error) {
       const errorMessage = error?.response?.data?.message || error?.message || 'Booking failed. Please try again.';
       alert(errorMessage);

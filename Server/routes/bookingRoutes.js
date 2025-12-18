@@ -3,8 +3,14 @@ import { body, validationResult } from 'express-validator';
 import Booking from '../models/Booking.js';
 import Vehicle from '../models/Vehicle.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
+import { createOrder, verifyPayment } from '../controllers/paymentController.js';
 
 const router = express.Router();
+
+// @desc    Create a new booking
+// @access  Private
+router.post('/create-order', protect, createOrder);
+router.post('/verify-payment', protect, verifyPayment);
 
 // @route   POST /api/bookings
 // @desc    Create a new booking
