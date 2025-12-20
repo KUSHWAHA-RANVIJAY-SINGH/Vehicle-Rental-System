@@ -61,8 +61,8 @@ const SearchBar = ({ onSearch, onFilterChange, filters }) => {
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 focus:bg-white transition duration-200"
               >
                 <option value="">All Types</option>
-                <option value="car">Car</option>
-                <option value="bike">Bike</option>
+                <option value="car">Four Wheeler (Car)</option>
+                <option value="bike">Two Wheeler (Bike)</option>
               </select>
             </div>
             <div>
@@ -80,6 +80,7 @@ const SearchBar = ({ onSearch, onFilterChange, filters }) => {
               <input
                 type="number"
                 placeholder="0"
+                step="100"
                 value={filters.minPrice || ''}
                 onChange={(e) => onFilterChange('minPrice', e.target.value)}
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 focus:bg-white transition duration-200"
@@ -90,6 +91,7 @@ const SearchBar = ({ onSearch, onFilterChange, filters }) => {
               <input
                 type="number"
                 placeholder="10000"
+                step="100"
                 value={filters.maxPrice || ''}
                 onChange={(e) => onFilterChange('maxPrice', e.target.value)}
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 focus:bg-white transition duration-200"

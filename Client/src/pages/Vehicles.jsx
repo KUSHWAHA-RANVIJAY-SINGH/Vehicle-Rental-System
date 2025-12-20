@@ -59,6 +59,39 @@ const Vehicles = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <h1 className="text-4xl font-bold text-gray-800 mb-8">Available Vehicles</h1>
 
+        {/* Category Tabs */}
+        <div className="flex justify-center mb-8">
+          <div className="bg-white p-1 rounded-xl shadow-sm border border-gray-100 inline-flex">
+            <button
+              onClick={() => handleFilterChange('type', '')}
+              className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${!filters.type
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-50'
+                }`}
+            >
+              All Vehicles
+            </button>
+            <button
+              onClick={() => handleFilterChange('type', 'bike')}
+              className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${filters.type === 'bike'
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-50'
+                }`}
+            >
+              Two Wheelers
+            </button>
+            <button
+              onClick={() => handleFilterChange('type', 'car')}
+              className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${filters.type === 'car'
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-50'
+                }`}
+            >
+              Four Wheelers
+            </button>
+          </div>
+        </div>
+
         <SearchBar onSearch={handleSearch} onFilterChange={handleFilterChange} filters={filters} />
 
         {loading ? (
