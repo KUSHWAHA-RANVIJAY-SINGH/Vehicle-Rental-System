@@ -33,6 +33,19 @@ const vehicleSchema = new mongoose.Schema({
     required: true,
     min: 0
   },
+  rentalOptions: {
+    daily: {
+      limit120: { price: Number },
+      limit300: { price: Number },
+      unlimited: { price: Number }
+    },
+    weekly: {
+      price: Number
+    },
+    monthly: {
+      price: Number
+    }
+  },
   fuelType: {
     type: String,
     enum: ['petrol', 'diesel', 'electric', 'hybrid'],

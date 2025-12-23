@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import User from '../models/User.js';
+import User from '../../models/User.js';
 import bcrypt from 'bcryptjs';
 
 dotenv.config();
@@ -22,7 +22,7 @@ const createAdmin = async () => {
     };
 
     // Check if admin already exists
-    const existingAdmin = await User.findOne({ 
+    const existingAdmin = await User.findOne({
       $or: [
         { email: adminData.email },
         { username: adminData.username },

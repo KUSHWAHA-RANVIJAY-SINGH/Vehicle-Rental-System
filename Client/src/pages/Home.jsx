@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchVehicles } from '../store/slices/vehicleSlice';
 import VehicleCard from '../components/VehicleCard';
 import Loader from '../components/Loader';
-import { FaCar, FaMotorcycle, FaShieldAlt, FaClock, FaStar } from 'react-icons/fa';
+import { FaCar, FaShieldAlt, FaClock, FaStar, FaSearch, FaUserCheck, FaCreditCard, FaKey } from 'react-icons/fa';
 
 const Home = () => {
   const dispatch = useDispatch();
@@ -16,100 +16,173 @@ const Home = () => {
 
   const featuredVehicles = vehicles.slice(0, 6);
 
+  const steps = [
+    { icon: <FaSearch />, title: "Choose Vehicle", desc: "Browse our premium fleet and pick your favorite." },
+    { icon: <FaUserCheck />, title: "Book Online", desc: "Select dates and providing your details securely." },
+    { icon: <FaKey />, title: "Pick & Drive", desc: "Pick up your car or bike and enjoy the ride." },
+  ];
+
   return (
-    <div>
+    <div className="font-sans">
       {/* Hero Section */}
-      <section className="relative bg-gray-900 text-white py-32">
-        <div className="absolute inset-0 overflow-hidden">
+      <section className="relative h-screen min-h-[600px] flex items-center justify-center bg-gray-900 text-white overflow-hidden">
+        {/* Background Image with Overlay */}
+        <div className="absolute inset-0">
           <img
             src="https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=1920&q=80"
             alt="Hero Background"
-            className="w-full h-full object-cover opacity-40"
+            className="w-full h-full object-cover"
           />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/80 to-black/40"></div>
         </div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h1 className="text-5xl md:text-6xl font-extrabold mb-6 tracking-tight">
-              Find Your <span className="text-blue-400">Perfect Ride</span>
-            </h1>
-            <p className="text-xl md:text-2xl mb-10 text-gray-200 max-w-2xl mx-auto">
-              Rent premium cars and bikes at affordable prices. Experience the freedom of the road with our trusted service.
-            </p>
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8">
+          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight leading-tight animate-fade-in-up">
+            Find Your <span className="text-blue-500">Freedom</span> <br />
+            on the Open Road
+          </h1>
+          <p className="text-xl md:text-2xl text-gray-300 max-w-2xl mx-auto leading-relaxed animate-fade-in-up delay-100">
+            Premium cars and bikes for every journey. Affordable rates, wide selection, and 24/7 support.
+          </p>
+
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-4 animate-fade-in-up delay-200">
             <Link
               to="/vehicles"
-              className="bg-blue-600 text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-blue-700 transition transform hover:scale-105 shadow-lg"
+              className="px-8 py-4 bg-blue-600 rounded-full font-bold text-lg hover:bg-blue-700 transition transform hover:scale-105 shadow-lg flex items-center"
             >
-              Browse Vehicles
+              <FaCar className="mr-2" /> Browse Vehicles
             </Link>
+            <Link
+              to="/about"
+              className="px-8 py-4 bg-transparent border-2 border-white rounded-full font-bold text-lg hover:bg-white hover:text-gray-900 transition transform hover:scale-105"
+            >
+              Learn More
+            </Link>
+          </div>
+        </div>
+
+        {/* Decorative Element */}
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-gray-50 to-transparent"></div>
+      </section>
+
+      {/* How It Works Section */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-gray-900">How It Works</h2>
+            <div className="w-20 h-1 bg-blue-600 mx-auto mt-4 rounded-full"></div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+            {/* Connecting Line (Desktop) */}
+            <div className="hidden md:block absolute top-1/2 left-0 right-0 h-0.5 bg-gray-200 -z-0 transform -translate-y-1/2 w-2/3 mx-auto"></div>
+
+            {steps.map((step, index) => (
+              <div key={index} className="relative z-10 bg-white p-8 rounded-xl shadow-lg text-center hover:-translate-y-2 transition duration-300">
+                <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center mx-auto mb-6 text-2xl shadow-blue-200 shadow-xl">
+                  {step.icon}
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-3">{step.title}</h3>
+                <p className="text-gray-600">{step.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-gray-900">Why Choose Us</h2>
-            <p className="mt-4 text-gray-600">We provide the best experience for our customers</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="bg-white p-8 rounded-xl shadow-sm hover:shadow-md transition duration-300 text-center group">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-blue-600 transition duration-300">
-                <FaCar className="text-2xl text-blue-600 group-hover:text-white transition duration-300" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+            <div className="space-y-8">
+              <h2 className="text-4xl font-bold text-gray-900 leading-tight">
+                Why Choose <span className="text-blue-600">RentWheels?</span>
+              </h2>
+              <p className="text-lg text-gray-600 leading-relaxed">
+                We don't just rent vehicles; we provide experiences. Our commitment to quality and safety ensures that every mile you drive is worry-free.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <FaShieldAlt className="text-blue-600 text-2xl" />
+                  </div>
+                  <div className="ml-4">
+                    <h4 className="text-lg font-semibold text-gray-900">100% Secure</h4>
+                    <p className="text-gray-600 text-sm mt-1">Safe payments & verified cars.</p>
+                  </div>
+                </div>
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <FaClock className="text-blue-600 text-2xl" />
+                  </div>
+                  <div className="ml-4">
+                    <h4 className="text-lg font-semibold text-gray-900">24/7 Support</h4>
+                    <p className="text-gray-600 text-sm mt-1">We're here whenever you need us.</p>
+                  </div>
+                </div>
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <FaStar className="text-blue-600 text-2xl" />
+                  </div>
+                  <div className="ml-4">
+                    <h4 className="text-lg font-semibold text-gray-900">Top Rated</h4>
+                    <p className="text-gray-600 text-sm mt-1">Loved by thousands of travelers.</p>
+                  </div>
+                </div>
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <FaCreditCard className="text-blue-600 text-2xl" />
+                  </div>
+                  <div className="ml-4">
+                    <h4 className="text-lg font-semibold text-gray-900">Affordable</h4>
+                    <p className="text-gray-600 text-sm mt-1">Best prices in the market.</p>
+                  </div>
+                </div>
               </div>
-              <h3 className="text-xl font-bold mb-3 text-gray-900">Wide Selection</h3>
-              <p className="text-gray-600">Choose from our extensive fleet of premium cars and bikes.</p>
             </div>
-            <div className="bg-white p-8 rounded-xl shadow-sm hover:shadow-md transition duration-300 text-center group">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-blue-600 transition duration-300">
-                <FaShieldAlt className="text-2xl text-blue-600 group-hover:text-white transition duration-300" />
-              </div>
-              <h3 className="text-xl font-bold mb-3 text-gray-900">Secure Booking</h3>
-              <p className="text-gray-600">Your safety and security are our top priorities.</p>
-            </div>
-            <div className="bg-white p-8 rounded-xl shadow-sm hover:shadow-md transition duration-300 text-center group">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-blue-600 transition duration-300">
-                <FaClock className="text-2xl text-blue-600 group-hover:text-white transition duration-300" />
-              </div>
-              <h3 className="text-xl font-bold mb-3 text-gray-900">24/7 Support</h3>
-              <p className="text-gray-600">Our dedicated team is always here to assist you.</p>
-            </div>
-            <div className="bg-white p-8 rounded-xl shadow-sm hover:shadow-md transition duration-300 text-center group">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-blue-600 transition duration-300">
-                <FaStar className="text-2xl text-blue-600 group-hover:text-white transition duration-300" />
-              </div>
-              <h3 className="text-xl font-bold mb-3 text-gray-900">Best Prices</h3>
-              <p className="text-gray-600">Enjoy competitive rates without compromising on quality.</p>
+            <div className="relative">
+              <div className="absolute inset-0 bg-blue-600 rounded-3xl transform rotate-3 opacity-10"></div>
+              <img
+                src="https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=800&q=80"
+                alt="Luxury Car"
+                className="relative rounded-3xl shadow-2xl w-full object-cover h-[400px]"
+              />
             </div>
           </div>
         </div>
       </section>
 
       {/* Featured Vehicles */}
-      <section className="py-16">
+      <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-gray-800 mb-4">Featured Vehicles</h2>
-            <p className="text-gray-600">Popular choices for your next adventure</p>
+          <div className="flex justify-between items-end mb-12">
+            <div>
+              <h2 className="text-3xl font-bold text-gray-900">Featured Vehicles</h2>
+              <p className="mt-2 text-gray-600">Top picks for your next adventure</p>
+            </div>
+            <Link to="/vehicles" className="hidden md:inline-flex items-center font-semibold text-blue-600 hover:text-blue-700 transition">
+              View All <span className="ml-2">&rarr;</span>
+            </Link>
           </div>
 
           {loading ? (
             <Loader />
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {featuredVehicles.map((vehicle) => (
-                <VehicleCard key={vehicle._id} vehicle={vehicle} />
+                <div key={vehicle._id} className="transform transition duration-300 hover:scale-[1.02]">
+                  <VehicleCard vehicle={vehicle} />
+                </div>
               ))}
             </div>
           )}
 
           {!loading && featuredVehicles.length === 0 && (
-            <div className="text-center py-12">
+            <div className="text-center py-12 bg-white rounded-xl shadow-sm">
               <p className="text-gray-600 text-lg">No vehicles available at the moment.</p>
             </div>
           )}
 
-          <div className="text-center mt-12">
+          <div className="text-center mt-12 md:hidden">
             <Link
               to="/vehicles"
               className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition inline-block"
@@ -121,15 +194,21 @@ const Home = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="bg-blue-600 text-white py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-bold mb-4">Ready to Start Your Journey?</h2>
-          <p className="text-xl mb-8 text-blue-100">
-            Join thousands of satisfied customers who trust us for their transportation needs.
+      <section className="py-24 bg-gradient-to-r from-blue-700 to-blue-900 text-white text-center relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full">
+            <circle cx="0" cy="0" r="40" fill="white" />
+            <circle cx="100" cy="100" r="30" fill="white" />
+          </svg>
+        </div>
+        <div className="relative z-10 max-w-4xl mx-auto px-4">
+          <h2 className="text-4xl md:text-5xl font-bold mb-6">Ready to hit the road?</h2>
+          <p className="text-xl md:text-2xl mb-10 text-blue-100 font-light">
+            Book your dream car today and get 15% off your first rental!
           </p>
           <Link
             to="/register"
-            className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition inline-block"
+            className="bg-white text-blue-800 px-10 py-4 rounded-full font-bold text-lg hover:bg-gray-100 transition transform hover:scale-105 shadow-2xl"
           >
             Get Started Now
           </Link>

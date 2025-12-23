@@ -1,14 +1,29 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../store/slices/authSlice';
-import { FaUser, FaSignOutAlt, FaCar, FaTachometerAlt } from 'react-icons/fa';
-import { useState } from 'react';
+import { FaUser, FaSignOutAlt, FaCar, FaTachometerAlt, FaChevronDown, FaCog } from 'react-icons/fa';
+import { useState, useRef, useEffect } from 'react';
 
 const Navbar = () => {
   const { user, isAuthenticated } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -41,34 +56,58 @@ const Navbar = () => {
             </Link>
 
             {isAuthenticated ? (
-              <>
-                <Link
-                  to="/dashboard"
-                  className="flex items-center space-x-1 text-gray-700 hover:text-blue-600 transition"
-                >
-                  <FaTachometerAlt />
-                  <span>Dashboard</span>
-                </Link>
-                {user?.role === 'admin' && (
-                  <Link
-                    to="/admin"
-                    className="text-gray-700 hover:text-blue-600 transition"
-                  >
-                    Admin
-                  </Link>
-                )}
-                <div className="flex items-center space-x-2">
-                  <FaUser className="text-gray-600" />
-                  <span className="text-gray-700">{user?.username}</span>
-                </div>
+              <div className="relative" ref={dropdownRef}>
                 <button
-                  onClick={handleLogout}
-                  className="flex items-center space-x-1 text-red-600 hover:text-red-700 transition"
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 transition focus:outline-none"
                 >
-                  <FaSignOutAlt />
-                  <span>Logout</span>
+                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                    <FaUser className="text-sm" />
+                  </div>
+                  <span className="font-medium">{user?.username}</span>
+                  <FaChevronDown className={`text-xs transition-transform ${dropdownOpen ? 'transform rotate-180' : ''}`} />
                 </button>
-              </>
+
+                {dropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 z-50">
+                    <div className="px-4 py-2 border-b border-gray-100">
+                      <p className="text-sm text-gray-500">Signed in as</p>
+                      <p className="text-sm font-bold text-gray-900 truncate">{user?.email}</p>
+                    </div>
+
+                    <Link
+                      to="/dashboard"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      <FaTachometerAlt className="mr-2 text-gray-400" />
+                      Dashboard
+                    </Link>
+
+                    {user?.role === 'admin' && (
+                      <Link
+                        to="/admin"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        <FaCog className="mr-2 text-gray-400" />
+                        Admin Portal
+                      </Link>
+                    )}
+
+                    <button
+                      onClick={() => {
+                        setDropdownOpen(false);
+                        handleLogout();
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center"
+                    >
+                      <FaSignOutAlt className="mr-2" />
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="flex items-center space-x-4">
                 <Link

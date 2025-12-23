@@ -362,6 +362,13 @@ const Admin = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                               ₹{booking.totalPrice}
+                              {booking.withDriver && (
+                                <div className="text-xs text-blue-600 font-normal flex items-center mt-1">
+                                  <span className="bg-blue-100 px-2 py-0.5 rounded-full flex items-center">
+                                    + Driver
+                                  </span>
+                                </div>
+                              )}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 

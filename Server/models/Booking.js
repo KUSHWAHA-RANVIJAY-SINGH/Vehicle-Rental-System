@@ -19,7 +19,7 @@ const bookingSchema = new mongoose.Schema({
     type: Date,
     required: true,
     validate: {
-      validator: function(dropoffDate) {
+      validator: function (dropoffDate) {
         return dropoffDate > this.pickupDate;
       },
       message: 'Drop-off date must be after pickup date'
@@ -45,6 +45,14 @@ const bookingSchema = new mongoose.Schema({
     required: true,
     min: 0
   },
+  withDriver: {
+    type: Boolean,
+    default: false
+  },
+  totalDriverFee: {
+    type: Number,
+    default: 0
+  },
   status: {
     type: String,
     enum: ['pending', 'confirmed', 'cancelled', 'completed'],
@@ -68,7 +76,7 @@ const bookingSchema = new mongoose.Schema({
 });
 
 // Calculate total days before saving
-bookingSchema.pre('save', function(next) {
+bookingSchema.pre('save', function (next) {
   if (this.pickupDate && this.dropoffDate) {
     const diffTime = Math.abs(this.dropoffDate - this.pickupDate);
     this.totalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));

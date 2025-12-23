@@ -301,15 +301,24 @@ const Dashboard = () => {
                 <div key={booking._id} className="bg-white rounded-lg shadow-md p-6">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
                     <div>
-                      <Link
-                        to={`/vehicles/${booking.vehicle._id}`}
-                        className="text-xl font-bold text-blue-600 hover:text-blue-700"
-                      >
-                        {booking.vehicle.name}
-                      </Link>
-                      <p className="text-gray-600">
-                        {booking.vehicle.brand} {booking.vehicle.model}
-                      </p>
+                      {booking.vehicle ? (
+                        <>
+                          <Link
+                            to={`/vehicles/${booking.vehicle._id}`}
+                            className="text-xl font-bold text-blue-600 hover:text-blue-700"
+                          >
+                            {booking.vehicle.name}
+                          </Link>
+                          <p className="text-gray-600">
+                            {booking.vehicle.brand} {booking.vehicle.model}
+                          </p>
+                        </>
+                      ) : (
+                        <div className="text-gray-500 italic">
+                          <span className="text-xl font-bold">Vehicle Unavailable</span>
+                          <p>This vehicle may have been removed.</p>
+                        </div>
+                      )}
                     </div>
                     <div className="flex flex-col md:items-end space-y-2 mt-4 md:mt-0">
                       {getStatusBadge(booking.status)}

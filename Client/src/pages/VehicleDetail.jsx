@@ -7,6 +7,7 @@ import { createBooking } from '../store/slices/bookingSlice';
 import { createCheckoutSession } from '../store/slices/bookingSlice';
 import Loader from '../components/Loader';
 import { FaCar, FaMotorcycle, FaMapMarkerAlt, FaCalendar, FaRupeeSign } from 'react-icons/fa';
+import LocationPicker from '../components/LocationPicker';
 // Stripe will be loaded dynamically when needed
 
 const VehicleDetail = () => {
@@ -23,6 +24,13 @@ const VehicleDetail = () => {
     pickupLocation: '',
     dropoffLocation: '',
   });
+
+  const [bookingType, setBookingType] = useState('day'); // 'day' or 'km'
+  const [selectedTier, setSelectedTier] = useState('unlimited'); // 'limit120', 'limit300', 'unlimited'
+  const [wantsDriver, setWantsDriver] = useState(false);
+
+  const [showMap, setShowMap] = useState(false);
+  const [activeLocationField, setActiveLocationField] = useState(null); // 'pickup' or 'dropoff'
 
   const [errors, setErrors] = useState({});
 
@@ -41,6 +49,23 @@ const VehicleDetail = () => {
     // Clear error when user types
     if (errors[e.target.name]) {
       setErrors({ ...errors, [e.target.name]: '' });
+    }
+  };
+
+  const openMap = (field) => {
+    setActiveLocationField(field);
+    setShowMap(true);
+  };
+
+  const handleLocationSelect = (address) => {
+    setBookingData({
+      ...bookingData,
+      [activeLocationField === 'pickup' ? 'pickupLocation' : 'dropoffLocation']: address,
+    });
+    // Clear error
+    const fieldName = activeLocationField === 'pickup' ? 'pickupLocation' : 'dropoffLocation';
+    if (errors[fieldName]) {
+      setErrors({ ...errors, [fieldName]: '' });
     }
   };
 
@@ -65,11 +90,31 @@ const VehicleDetail = () => {
 
   const calculateTotalPrice = () => {
     if (!currentVehicle || !bookingData.pickupDate || !bookingData.dropoffDate) return 0;
+
+    // Get correct daily rate based on tier
+    let dailyRate = currentVehicle.pricePerDay;
+
+    if (currentVehicle.rentalOptions?.daily) {
+      if (selectedTier === 'unlimited') dailyRate = currentVehicle.rentalOptions.daily.unlimited.price;
+      else if (selectedTier === 'limit120') dailyRate = currentVehicle.rentalOptions.daily.limit120.price;
+      else if (selectedTier === 'limit300') dailyRate = currentVehicle.rentalOptions.daily.limit300.price;
+    }
+
     const pickup = new Date(bookingData.pickupDate);
     const dropoff = new Date(bookingData.dropoffDate);
     const diffTime = Math.abs(dropoff - pickup);
     const totalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return totalDays * currentVehicle.pricePerDay;
+
+    // If same day return (0 days diff), charge for 1 day
+    const chargeableDays = totalDays === 0 ? 1 : totalDays;
+
+    let total = chargeableDays * dailyRate;
+
+    if (wantsDriver) {
+      total += 500 * chargeableDays;
+    }
+
+    return total;
   };
 
   const handleBookNow = async (e) => {
@@ -90,10 +135,18 @@ const VehicleDetail = () => {
 
     try {
       // 1. Create Booking (pending)
+      const pickup = new Date(bookingData.pickupDate);
+      const dropoff = new Date(bookingData.dropoffDate);
+      const diffTime = Math.abs(dropoff - pickup);
+      const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const chargeableDays = days === 0 ? 1 : days;
+
       const booking = await dispatch(
         createBooking({
           vehicle: id,
           ...bookingData,
+          withDriver: wantsDriver,
+          totalDriverFee: wantsDriver ? (500 * chargeableDays) : 0
         })
       ).unwrap();
 
@@ -302,6 +355,79 @@ const VehicleDetail = () => {
             {currentVehicle.available && (
               <div className="bg-white rounded-lg shadow-md p-6">
                 <h2 className="text-2xl font-bold text-gray-800 mb-4">Book This Vehicle</h2>
+
+                {/* Booking Options Toggle */}
+                <div className="mb-6">
+                  <div className="flex bg-gray-100 p-1 rounded-lg mb-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBookingType('day');
+                        setSelectedTier('unlimited');
+                      }}
+                      className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${bookingType === 'day'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                    >
+                      Day Wise
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBookingType('km');
+                        setSelectedTier('limit120');
+                      }}
+                      className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${bookingType === 'km'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                    >
+                      KM Wise
+                    </button>
+                  </div>
+
+                  {/* Tier Selection for KM Wise */}
+                  {bookingType === 'km' && (
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div
+                        onClick={() => setSelectedTier('limit120')}
+                        className={`border rounded-lg p-3 cursor-pointer transition-all ${selectedTier === 'limit120'
+                          ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500'
+                          : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                      >
+                        <div className="text-xs text-gray-500 mb-1">120 Kms/Day</div>
+                        <div className="font-bold text-gray-800">
+                          ₹{currentVehicle.rentalOptions?.daily?.limit120?.price || '-'}
+                        </div>
+                      </div>
+                      <div
+                        onClick={() => setSelectedTier('limit300')}
+                        className={`border rounded-lg p-3 cursor-pointer transition-all ${selectedTier === 'limit300'
+                          ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500'
+                          : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                      >
+                        <div className="text-xs text-gray-500 mb-1">300 Kms/Day</div>
+                        <div className="font-bold text-gray-800">
+                          ₹{currentVehicle.rentalOptions?.daily?.limit300?.price || '-'}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Info for Day Wise */}
+                  {bookingType === 'day' && (
+                    <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-4">
+                      <div className="text-xs text-blue-600 font-semibold mb-1">UNLIMITED KMS</div>
+                      <div className="font-bold text-gray-800">
+                        ₹{currentVehicle.rentalOptions?.daily?.unlimited?.price || '-'} <span className="text-sm font-normal text-gray-500">/day</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <form onSubmit={handleBookNow} className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -343,17 +469,23 @@ const VehicleDetail = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Pickup Location
                     </label>
-                    <input
-                      type="text"
-                      name="pickupLocation"
-                      value={bookingData.pickupLocation}
-                      onChange={handleInputChange}
-                      placeholder="Enter pickup location"
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${errors.pickupLocation
-                        ? 'border-red-500'
-                        : 'border-gray-300 focus:ring-blue-500'
-                        }`}
-                    />
+                    <div className="relative">
+                      <input
+                        type="text"
+                        name="pickupLocation"
+                        value={bookingData.pickupLocation}
+                        onChange={handleInputChange}
+                        placeholder="Enter pickup location"
+                        className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${errors.pickupLocation
+                          ? 'border-red-500'
+                          : 'border-gray-300 focus:ring-blue-500'
+                          }`}
+                      />
+                      <FaMapMarkerAlt
+                        className="absolute left-3 top-3.5 text-gray-400 cursor-pointer hover:text-blue-500 z-10"
+                        onClick={() => openMap('pickup')}
+                      />
+                    </div>
                     {errors.pickupLocation && (
                       <p className="text-red-500 text-sm mt-1">{errors.pickupLocation}</p>
                     )}
@@ -363,26 +495,81 @@ const VehicleDetail = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Dropoff Location
                     </label>
-                    <input
-                      type="text"
-                      name="dropoffLocation"
-                      value={bookingData.dropoffLocation}
-                      onChange={handleInputChange}
-                      placeholder="Enter dropoff location"
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${errors.dropoffLocation
-                        ? 'border-red-500'
-                        : 'border-gray-300 focus:ring-blue-500'
-                        }`}
-                    />
+                    <div className="relative">
+                      <input
+                        type="text"
+                        name="dropoffLocation"
+                        value={bookingData.dropoffLocation}
+                        onChange={handleInputChange}
+                        placeholder="Enter dropoff location"
+                        className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${errors.dropoffLocation
+                          ? 'border-red-500'
+                          : 'border-gray-300 focus:ring-blue-500'
+                          }`}
+                      />
+                      <FaMapMarkerAlt
+                        className="absolute left-3 top-3.5 text-gray-400 cursor-pointer hover:text-blue-500 z-10"
+                        onClick={() => openMap('dropoff')}
+                      />
+                    </div>
                     {errors.dropoffLocation && (
                       <p className="text-red-500 text-sm mt-1">{errors.dropoffLocation}</p>
                     )}
                   </div>
 
+                  {/* Driver Option */}
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="flex items-start">
+                      <div className="flex items-center h-5">
+                        <input
+                          id="driver-checkbox"
+                          name="wantsDriver"
+                          type="checkbox"
+                          checked={wantsDriver}
+                          onChange={(e) => setWantsDriver(e.target.checked)}
+                          className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded"
+                        />
+                      </div>
+                      <div className="ml-3 text-sm">
+                        <label htmlFor="driver-checkbox" className="font-medium text-gray-700">
+                          I need a Driver (+ ₹500/day)
+                        </label>
+                        <p className="text-gray-500 text-xs mt-1">
+                          Driver food and accommodation to be managed by customer for outstation trips.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
                   {totalPrice > 0 && (
                     <div className="bg-blue-50 p-4 rounded-lg">
-                      <div className="flex justify-between items-center">
-                        <span className="font-semibold text-gray-700">Total Price:</span>
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-gray-600">Vehicle Base Price:</span>
+                        <span className="font-semibold text-gray-800">
+                          {/* Recalculating base for display */}
+                          ₹{(() => {
+                            if (!bookingData.pickupDate || !bookingData.dropoffDate) return 0;
+                            const p = new Date(bookingData.pickupDate);
+                            const d = new Date(bookingData.dropoffDate);
+                            const days = Math.ceil(Math.abs(d - p) / (1000 * 60 * 60 * 24)) || 1;
+                            return totalPrice - (wantsDriver ? 500 * days : 0);
+                          })()}
+                        </span>
+                      </div>
+                      {wantsDriver && (
+                        <div className="flex justify-between items-center mb-2 text-sm text-gray-600">
+                          <span>Driver Fee:</span>
+                          <span>+ ₹{(() => {
+                            if (!bookingData.pickupDate || !bookingData.dropoffDate) return 0;
+                            const p = new Date(bookingData.pickupDate);
+                            const d = new Date(bookingData.dropoffDate);
+                            const days = Math.ceil(Math.abs(d - p) / (1000 * 60 * 60 * 24)) || 1;
+                            return 500 * days;
+                          })()}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center border-t border-blue-200 pt-2">
+                        <span className="font-bold text-gray-800">Total Price:</span>
                         <span className="text-2xl font-bold text-blue-600">₹{totalPrice}</span>
                       </div>
                     </div>
@@ -398,9 +585,16 @@ const VehicleDetail = () => {
               </div>
             )}
           </div>
-        </div>
-      </div>
-    </div>
+        </div >
+      </div >
+
+      {showMap && (
+        <LocationPicker
+          onClose={() => setShowMap(false)}
+          onConfirm={handleLocationSelect}
+        />
+      )}
+    </div >
   );
 };
 

@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import Vehicle from '../models/Vehicle.js';
+import Vehicle from '../../models/Vehicle.js';
 
 dotenv.config();
 
@@ -147,6 +147,19 @@ const vehicles = [
     model: model,
     year: new Date().getFullYear(),
     pricePerDay: vehicle.price,
+    rentalOptions: {
+      daily: {
+        limit120: { price: Math.round(vehicle.price * 0.85) },
+        limit300: { price: vehicle.price },
+        unlimited: { price: Math.round(vehicle.price * 1.3) }
+      },
+      weekly: {
+        price: vehicle.price * 6
+      },
+      monthly: {
+        price: vehicle.price * 22
+      }
+    },
     fuelType: 'petrol',
     seats: seats,
     transmission: transmission,
