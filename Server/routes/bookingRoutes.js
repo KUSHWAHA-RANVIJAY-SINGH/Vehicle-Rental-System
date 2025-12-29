@@ -47,9 +47,36 @@ router.post('/', protect, [
       return res.status(400).json({ message: 'Vehicle is not available' });
     }
 
-    // Calculate total price
+    // Prevent overlapping bookings for the same vehicle
+    // Overlap condition (day-level): existing.pickupDate < newDropoff && existing.dropoffDate > newPickup
+    // This allows back-to-back bookings where new pickup === existing dropoff (no overlap)
+    // Note: This is a fast server-side check but not a full-proof lock; to avoid rare race conditions
+    // (two users booking the same car at the same time) consider using MongoDB transactions
+    // or an external reservation lock (Redis) in production.
     const pickup = new Date(pickupDate);
     const dropoff = new Date(dropoffDate);
+
+    const conflictingBooking = await Booking.findOne({
+      vehicle,
+      status: { $in: ['pending', 'confirmed'] },
+      $and: [
+        { pickupDate: { $lt: dropoff } },
+        { dropoffDate: { $gt: pickup } }
+      ]
+    });
+
+    if (conflictingBooking) {
+      return res.status(409).json({
+        message: 'Vehicle is already booked for the selected dates',
+        conflict: {
+          id: conflictingBooking._id,
+          pickupDate: conflictingBooking.pickupDate,
+          dropoffDate: conflictingBooking.dropoffDate
+        }
+      });
+    }
+
+    // Calculate total price
     const diffTime = Math.abs(dropoff - pickup);
     const totalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     // Calculate total price in INR

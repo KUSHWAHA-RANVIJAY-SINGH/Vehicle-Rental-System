@@ -33,6 +33,8 @@ app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/contact', contactRoutes);
+import recommendationRoutes from './routes/recommendationRoutes.js';
+app.use('/api/recommendations', recommendationRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

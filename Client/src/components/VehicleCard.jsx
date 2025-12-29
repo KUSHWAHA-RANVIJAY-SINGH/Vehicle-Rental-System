@@ -70,6 +70,12 @@ const VehicleCard = ({ vehicle }) => {
         <p className="text-gray-500 text-sm font-medium mb-4">
           {vehicle.brand} {vehicle.model} • {vehicle.year}
         </p>
+        {vehicle.registrationNumber && (
+          <p className="text-gray-400 text-xs mb-1">Reg: {vehicle.registrationNumber}</p>
+        )}
+        {vehicle.odometerKm !== undefined && (
+          <p className="text-gray-400 text-xs mb-3">Odo: {vehicle.odometerKm.toLocaleString()} km</p>
+        )}
 
         {/* Specs Grid */}
         <div className="grid grid-cols-2 gap-2 mb-6">

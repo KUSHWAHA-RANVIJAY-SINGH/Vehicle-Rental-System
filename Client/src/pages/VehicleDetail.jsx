@@ -33,13 +33,29 @@ const VehicleDetail = () => {
   const [activeLocationField, setActiveLocationField] = useState(null); // 'pickup' or 'dropoff'
 
   const [errors, setErrors] = useState({});
+  const [recommendations, setRecommendations] = useState([]);
 
   useEffect(() => {
     dispatch(fetchVehicleById(id));
+
+    // Fetch personalized recommendations for the authenticated user (if any)
+    const fetchRecs = async () => {
+      try {
+        if (isAuthenticated && user?._id) {
+          const { data } = await api.get(`/recommendations/user/${user._id}?limit=3`);
+          setRecommendations(data.recommendations || []);
+        }
+      } catch (err) {
+        console.warn('Could not fetch recommendations', err?.response?.data || err.message);
+      }
+    };
+
+    fetchRecs();
+
     return () => {
       dispatch(clearCurrentVehicle());
     };
-  }, [dispatch, id]);
+  }, [dispatch, id, isAuthenticated, user?._id]);
 
   const handleInputChange = (e) => {
     setBookingData({
@@ -134,9 +150,22 @@ const VehicleDetail = () => {
     if (!validateForm()) return;
 
     try {
-      // 1. Create Booking (pending)
+      // 0. Check availability before creating booking to avoid payment failures
       const pickup = new Date(bookingData.pickupDate);
       const dropoff = new Date(bookingData.dropoffDate);
+      try {
+        const { data: availability } = await api.get(`/vehicles/${id}/availability?start=${encodeURIComponent(pickup.toISOString())}&end=${encodeURIComponent(dropoff.toISOString())}`);
+        if (!availability.available) {
+          const conflict = availability.conflict;
+          alert(`Vehicle not available for selected dates${conflict ? ` (conflict: ${new Date(conflict.pickupDate).toLocaleDateString()} - ${new Date(conflict.dropoffDate).toLocaleDateString()})` : ''}`);
+          return;
+        }
+      } catch (err) {
+        // If availability check fails, proceed with caution but warn user
+        console.warn('Availability check failed, proceeding with booking attempt', err);
+      }
+
+      // 1. Create Booking (pending)
       const diffTime = Math.abs(dropoff - pickup);
       const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       const chargeableDays = days === 0 ? 1 : days;
@@ -340,6 +369,39 @@ const VehicleDetail = () => {
                       </span>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* Recommendations */}
+              {recommendations.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="font-semibold mb-2">Recommended for you</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {recommendations.map(rec => (
+                      <div key={rec._id} className="bg-white rounded-lg p-3 shadow-sm">
+                        <a href={`/vehicles/${rec._id}`} className="block">
+                          <img src={(rec.images && rec.images[0]) || 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&h=600&fit=crop'} alt={rec.name} className="w-full h-36 object-cover rounded" />
+                          <h4 className="mt-2 font-semibold text-sm">{rec.name}</h4>
+                          <p className="text-xs text-gray-500">{rec.brand} • ₹{rec.pricePerDay}/day</p>
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {currentVehicle.documents?.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="font-semibold mb-2">Documents:</h3>
+                  <ul className="list-disc list-inside text-sm text-gray-600">
+                    {currentVehicle.documents.map((doc, idx) => (
+                      <li key={idx}>
+                        <a href={doc} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                          {doc}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
 

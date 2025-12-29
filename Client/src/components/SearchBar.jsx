@@ -1,17 +1,63 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FaSearch, FaFilter } from 'react-icons/fa';
 
+import useDebounce from '../hooks/useDebounce';
+
 const SearchBar = ({ onSearch, onFilterChange, filters }) => {
-  const [searchTerm, setSearchTerm] = useState('');
+  // Local inputs so we can debounce before notifying parent
+  const [searchInput, setSearchInput] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+
+  const [localFilters, setLocalFilters] = useState({
+    brand: filters.brand || '',
+    minPrice: filters.minPrice || '',
+    maxPrice: filters.maxPrice || ''
+  });
+
+  // Keep local copy in sync when parent filters change (e.g., reset from elsewhere)
+  useEffect(() => {
+    setLocalFilters({
+      brand: filters.brand || '',
+      minPrice: filters.minPrice || '',
+      maxPrice: filters.maxPrice || ''
+    });
+    // Also keep search input in sync if parent clears it
+    if (!filters.search) setSearchInput('');
+  }, [filters]);
+
+  // Debounced values
+  const debouncedSearch = useDebounce(searchInput, 500);
+  const debouncedBrand = useDebounce(localFilters.brand, 500);
+  const debouncedMinPrice = useDebounce(localFilters.minPrice, 500);
+  const debouncedMaxPrice = useDebounce(localFilters.maxPrice, 500);
+
+  // Notify parent only after user stops typing for 500ms
+  useEffect(() => {
+    onSearch(debouncedSearch);
+  }, [debouncedSearch]);
+
+  useEffect(() => {
+    onFilterChange('brand', debouncedBrand);
+  }, [debouncedBrand]);
+
+  useEffect(() => {
+    onFilterChange('minPrice', debouncedMinPrice);
+  }, [debouncedMinPrice]);
+
+  useEffect(() => {
+    onFilterChange('maxPrice', debouncedMaxPrice);
+  }, [debouncedMaxPrice]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSearch(searchTerm);
+    // Submit immediately if user clicks Search button
+    onSearch(searchInput);
   };
 
   const clearFilters = () => {
-    setSearchTerm('');
+    setSearchInput('');
+    setLocalFilters({ brand: '', minPrice: '', maxPrice: '' });
+    // Immediately clear parent filters and search
     onSearch('');
     onFilterChange('type', '');
     onFilterChange('brand', '');
@@ -27,8 +73,8 @@ const SearchBar = ({ onSearch, onFilterChange, filters }) => {
           <input
             type="text"
             placeholder="Search by name, brand, or model..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 bg-gray-50 focus:bg-white"
           />
         </div>
@@ -70,8 +116,8 @@ const SearchBar = ({ onSearch, onFilterChange, filters }) => {
               <input
                 type="text"
                 placeholder="e.g. Toyota, Honda"
-                value={filters.brand || ''}
-                onChange={(e) => onFilterChange('brand', e.target.value)}
+                value={localFilters.brand}
+                onChange={(e) => setLocalFilters((prev) => ({ ...prev, brand: e.target.value }))}
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 focus:bg-white transition duration-200"
               />
             </div>
@@ -81,8 +127,8 @@ const SearchBar = ({ onSearch, onFilterChange, filters }) => {
                 type="number"
                 placeholder="0"
                 step="100"
-                value={filters.minPrice || ''}
-                onChange={(e) => onFilterChange('minPrice', e.target.value)}
+                value={localFilters.minPrice}
+                onChange={(e) => setLocalFilters((prev) => ({ ...prev, minPrice: e.target.value }))}
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 focus:bg-white transition duration-200"
               />
             </div>
@@ -92,8 +138,8 @@ const SearchBar = ({ onSearch, onFilterChange, filters }) => {
                 type="number"
                 placeholder="10000"
                 step="100"
-                value={filters.maxPrice || ''}
-                onChange={(e) => onFilterChange('maxPrice', e.target.value)}
+                value={localFilters.maxPrice}
+                onChange={(e) => setLocalFilters((prev) => ({ ...prev, maxPrice: e.target.value }))}
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 focus:bg-white transition duration-200"
               />
             </div>

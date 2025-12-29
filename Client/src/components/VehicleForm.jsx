@@ -14,6 +14,13 @@ const VehicleForm = ({ vehicle, onSuccess }) => {
     fuelType: 'petrol',
     seats: '',
     transmission: 'manual',
+    color: '',
+    registrationNumber: '',
+    vin: '',
+    odometerKm: '',
+    fuelEconomy: '',
+    insuranceExpiry: '',
+    documents: [],
     description: '',
     location: '',
     available: true,
@@ -35,6 +42,13 @@ const VehicleForm = ({ vehicle, onSuccess }) => {
         fuelType: vehicle.fuelType || 'petrol',
         seats: vehicle.seats || '',
         transmission: vehicle.transmission || 'manual',
+        color: vehicle.color || '',
+        registrationNumber: vehicle.registrationNumber || '',
+        vin: vehicle.vin || '',
+        odometerKm: vehicle.odometerKm || '',
+        fuelEconomy: vehicle.fuelEconomy || '',
+        insuranceExpiry: vehicle.insuranceExpiry ? new Date(vehicle.insuranceExpiry).toISOString().slice(0, 10) : '',
+        documents: vehicle.documents || [],
         description: vehicle.description || '',
         location: vehicle.location || '',
         available: vehicle.available !== undefined ? vehicle.available : true,
@@ -80,10 +94,17 @@ const VehicleForm = ({ vehicle, onSuccess }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      // Normalize values before send
+      const payload = { ...formData };
+      if (payload.odometerKm === '' || payload.odometerKm === null) delete payload.odometerKm; else payload.odometerKm = Number(payload.odometerKm);
+      if (payload.fuelEconomy === '' || payload.fuelEconomy === null) delete payload.fuelEconomy; else payload.fuelEconomy = Number(payload.fuelEconomy);
+      if (!payload.insuranceExpiry) delete payload.insuranceExpiry;
+      if (payload.documents && payload.documents.length === 0) delete payload.documents;
+
       if (vehicle) {
-        await dispatch(updateVehicle({ id: vehicle._id, data: formData })).unwrap();
+        await dispatch(updateVehicle({ id: vehicle._id, data: payload })).unwrap();
       } else {
-        await dispatch(createVehicle(formData)).unwrap();
+        await dispatch(createVehicle(payload)).unwrap();
       }
       onSuccess();
     } catch (error) {
@@ -250,6 +271,85 @@ const VehicleForm = ({ vehicle, onSuccess }) => {
         <p className="mt-1 text-xs text-gray-500">
           Tip: Use Unsplash URLs for free high-quality images. Separate multiple URLs with commas.
         </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
+          <input
+            type="text"
+            name="color"
+            value={formData.color}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Registration Number</label>
+          <input
+            type="text"
+            name="registrationNumber"
+            value={formData.registrationNumber}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">VIN</label>
+          <input
+            type="text"
+            name="vin"
+            value={formData.vin}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Odometer (km)</label>
+          <input
+            type="number"
+            name="odometerKm"
+            min="0"
+            value={formData.odometerKm}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Fuel Economy (km/l)</label>
+          <input
+            type="number"
+            name="fuelEconomy"
+            step="0.1"
+            min="0"
+            value={formData.fuelEconomy}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Insurance Expiry</label>
+          <input
+            type="date"
+            name="insuranceExpiry"
+            value={formData.insuranceExpiry}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Documents (comma-separated URLs)</label>
+          <input
+            type="text"
+            value={formData.documents.join(', ')}
+            onChange={(e) => {
+              const urls = e.target.value.split(',').map((u) => u.trim()).filter(Boolean);
+              setFormData((prev) => ({ ...prev, documents: urls }));
+            }}
+            placeholder="https://example.com/rc.pdf, https://example.com/insurance.pdf"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
       </div>
 
       <div>

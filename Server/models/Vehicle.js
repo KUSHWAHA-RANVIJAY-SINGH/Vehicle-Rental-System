@@ -61,6 +61,35 @@ const vehicleSchema = new mongoose.Schema({
     enum: ['manual', 'automatic'],
     default: 'manual'
   },
+  color: {
+    type: String,
+    trim: true
+  },
+  registrationNumber: {
+    type: String,
+    trim: true,
+    index: true
+  },
+  vin: {
+    type: String,
+    trim: true,
+    index: true
+  },
+  odometerKm: {
+    type: Number,
+    min: 0
+  },
+  fuelEconomy: {
+    type: Number, // km per liter
+    min: 0
+  },
+  insuranceExpiry: {
+    type: Date
+  },
+  documents: {
+    type: [String],
+    default: []
+  },
   images: {
     type: [String],
     default: []

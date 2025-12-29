@@ -120,13 +120,18 @@ Vehicle_Rental_System/
 
 ### Vehicles
 - `GET /api/vehicles` - Get all vehicles (with optional filters)
+  - Optional query `start` and `end` (ISO dates) will return only vehicles available for that date range
 - `GET /api/vehicles/:id` - Get single vehicle
+- `GET /api/vehicles/:id/availability?start=<ISO>&end=<ISO>` - Check vehicle availability for a date range (returns `{ available: boolean, conflict?: { id, pickupDate, dropoffDate } }`)
+- `GET /api/recommendations/user/:id?limit=3` - Personalized recommendations for a user (authenticated) — returns up to `limit` vehicles and a short `meta` object.
 - `POST /api/vehicles` - Create vehicle (admin only)
 - `PUT /api/vehicles/:id` - Update vehicle (admin only)
 - `DELETE /api/vehicles/:id` - Delete vehicle (admin only)
 
 ### Bookings
 - `POST /api/bookings` - Create booking (authenticated)
+  - Server verifies that the vehicle is available for the requested date range and will return 409 Conflict if dates overlap with an existing pending/confirmed booking.
+  - Recommend calling `GET /api/vehicles/:id/availability?start=<ISO>&end=<ISO>` before attempting to create a booking to provide faster feedback to users.
 - `GET /api/bookings/user/:id` - Get user's bookings
 - `GET /api/bookings` - Get all bookings (admin only)
 - `PUT /api/bookings/:id/status` - Update booking status (admin only)
