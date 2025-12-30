@@ -91,8 +91,17 @@ router.get('/:id/availability', async (req, res) => {
     if (Number.isNaN(pickup.getTime()) || Number.isNaN(dropoff.getTime())) return res.status(400).json({ message: 'Invalid date format' });
     if (dropoff <= pickup) return res.status(400).json({ message: 'End date must be after start date' });
 
+    let vehicleId = req.params.id;
+
+    // Resolve slug to ID if necessary
+    if (!vehicleId.match(/^[0-9a-fA-F]{24}$/)) {
+      const vehicle = await Vehicle.findOne({ slug: vehicleId });
+      if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
+      vehicleId = vehicle._id;
+    }
+
     const conflict = await (await import('../models/Booking.js')).default.findOne({
-      vehicle: req.params.id,
+      vehicle: vehicleId,
       status: { $in: ['pending', 'confirmed'] },
       $and: [
         { pickupDate: { $lt: dropoff } },
@@ -107,11 +116,23 @@ router.get('/:id/availability', async (req, res) => {
 });
 
 // @route   GET /api/vehicles/:id
-// @desc    Get single vehicle by ID
+// @desc    Get single vehicle by ID or Slug
 // @access  Public
 router.get('/:id', async (req, res) => {
   try {
-    const vehicle = await Vehicle.findById(req.params.id);
+    const { id } = req.params;
+    let vehicle;
+
+    // Check if it's a valid ObjectId
+    if (id.match(/^[0-9a-fA-F]{24}$/)) {
+      vehicle = await Vehicle.findById(id);
+    }
+
+    // If not found by ID or not a valid ID, try finding by slug
+    if (!vehicle) {
+      vehicle = await Vehicle.findOne({ slug: id });
+    }
+
     if (!vehicle) {
       return res.status(404).json({ message: 'Vehicle not found' });
     }

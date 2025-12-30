@@ -22,7 +22,7 @@ const VehicleCard = ({ vehicle }) => {
 
   return (
     <div className="group bg-white rounded-2xl shadow-sm hover:shadow-2xl transition-all duration-300 border border-gray-100 overflow-hidden flex flex-col h-full transform hover:-translate-y-1">
-      <Link to={`/vehicles/${vehicle._id}`} className="relative block h-56 overflow-hidden">
+      <Link to={`/vehicles/${vehicle.slug || vehicle._id}`} className="relative block h-56 overflow-hidden">
         <img
           src={imageUrl}
           alt={vehicle.name || 'Vehicle'}
@@ -62,7 +62,7 @@ const VehicleCard = ({ vehicle }) => {
       </Link>
 
       <div className="p-6 flex flex-col flex-grow">
-        <Link to={`/vehicles/${vehicle._id}`} className="block">
+        <Link to={`/vehicles/${vehicle.slug || vehicle._id}`} className="block">
           <h3 className="text-xl font-bold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors line-clamp-1">
             {vehicle.name}
           </h3>

@@ -154,7 +154,8 @@ const VehicleDetail = () => {
       const pickup = new Date(bookingData.pickupDate);
       const dropoff = new Date(bookingData.dropoffDate);
       try {
-        const { data: availability } = await api.get(`/vehicles/${id}/availability?start=${encodeURIComponent(pickup.toISOString())}&end=${encodeURIComponent(dropoff.toISOString())}`);
+        // Use currentVehicle._id instead of URL param (which might be a slug)
+        const { data: availability } = await api.get(`/vehicles/${currentVehicle._id}/availability?start=${encodeURIComponent(pickup.toISOString())}&end=${encodeURIComponent(dropoff.toISOString())}`);
         if (!availability.available) {
           const conflict = availability.conflict;
           alert(`Vehicle not available for selected dates${conflict ? ` (conflict: ${new Date(conflict.pickupDate).toLocaleDateString()} - ${new Date(conflict.dropoffDate).toLocaleDateString()})` : ''}`);
@@ -172,7 +173,7 @@ const VehicleDetail = () => {
 
       const booking = await dispatch(
         createBooking({
-          vehicle: id,
+          vehicle: currentVehicle._id, // Use resolved _id from state
           ...bookingData,
           withDriver: wantsDriver,
           totalDriverFee: wantsDriver ? (500 * chargeableDays) : 0
@@ -270,134 +271,172 @@ const VehicleDetail = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Vehicle Images */}
-          <div>
+
+        {/* Main Grid Container */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+
+          {/* Left Column (66%) - Images & Details */}
+          <div className="lg:col-span-2 space-y-6">
+
+            {/* 1. Main Image */}
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
               <img
                 src={imageUrl}
                 alt={currentVehicle.name || 'Vehicle'}
-                className="w-full h-96 object-cover rounded-lg"
+                className="w-full h-[400px] object-cover"
                 onError={(e) => {
-                  // Prevent infinite loop by checking if already using fallback
                   if (e.target.src !== defaultCarImage && e.target.src !== defaultBikeImage) {
                     e.target.src = currentVehicle.type === 'car' ? defaultCarImage : defaultBikeImage;
                   }
                 }}
-                loading="eager"
               />
             </div>
-            {currentVehicle.images?.length > 1 && (
-              <div className="grid grid-cols-4 gap-2 mt-4">
-                {currentVehicle.images.slice(1, 5).map((img, idx) => {
-                  const thumbnailUrl = (img && (img.startsWith('http://') || img.startsWith('https://')))
-                    ? img
-                    : (currentVehicle.type === 'car' ? defaultCarImage : defaultBikeImage);
-                  return (
+
+            {/* 2. Image Gallery (3 placeholders) */}
+            <div className="grid grid-cols-3 gap-4">
+              {/* If we have real extra images, show them; otherwise show placeholders or repeat main image */}
+              {currentVehicle.images && currentVehicle.images.length > 1
+                ? currentVehicle.images.slice(1, 4).map((img, idx) => (
+                  <div key={idx} className="bg-white rounded-lg shadow-sm overflow-hidden h-32">
                     <img
-                      key={idx}
-                      src={thumbnailUrl}
-                      alt={`${currentVehicle.name} ${idx + 2}`}
-                      className="w-full h-20 object-cover rounded cursor-pointer hover:opacity-75 transition-opacity"
+                      src={img}
+                      alt={`Gallery ${idx}`}
+                      className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition"
                       onError={(e) => {
-                        if (e.target.src !== defaultCarImage && e.target.src !== defaultBikeImage) {
-                          e.target.src = currentVehicle.type === 'car' ? defaultCarImage : defaultBikeImage;
-                        }
+                        e.target.src = currentVehicle.type === 'car' ? defaultCarImage : defaultBikeImage;
                       }}
-                      loading="lazy"
                     />
-                  );
-                })}
+                  </div>
+                ))
+                : (
+                  // Fallback placeholders if no extra images
+                  [1, 2, 3].map((_, idx) => (
+                    <div key={idx} className="bg-gray-200 rounded-lg shadow-sm h-32 flex items-center justify-center text-gray-400">
+                      <span className="text-sm">Image {idx + 1}</span>
+                    </div>
+                  ))
+                )
+              }
+            </div>
+
+            {/* 3. Vehicle Details Card */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+
+              {/* Header */}
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-800 mb-2">{currentVehicle.name}</h1>
+                  <p className="text-xl text-gray-600">
+                    {currentVehicle.brand} {currentVehicle.model} ({currentVehicle.year})
+                  </p>
+                </div>
+                <div className="text-right">
+                  <div className="text-3xl font-bold text-blue-600">
+                    ₹{currentVehicle.pricePerDay}
+                  </div>
+                  <div className="text-gray-500 text-sm">/day</div>
+                </div>
               </div>
-            )}
-          </div>
 
-          {/* Vehicle Details */}
-          <div>
-            <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <h1 className="text-3xl font-bold text-gray-800">{currentVehicle.name}</h1>
-                <span className="text-2xl font-bold text-blue-600">
-                  ₹{currentVehicle.pricePerDay}/day
-                </span>
-              </div>
+              {/* Specs Grid */}
+              <div className="bg-gray-50 rounded-xl p-6 mb-8 border border-gray-100">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Vehicle Specifications</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
+                      {currentVehicle.type === 'car' ? <FaCar /> : <FaMotorcycle />}
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">Type</p>
+                      <p className="font-medium text-gray-800 capitalize">{currentVehicle.type}</p>
+                    </div>
+                  </div>
 
-              <p className="text-xl text-gray-600 mb-4">
-                {currentVehicle.brand} {currentVehicle.model} ({currentVehicle.year})
-              </p>
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-green-100 rounded-lg text-green-600">
+                      <FaMapMarkerAlt />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">Location</p>
+                      <p className="font-medium text-gray-800">{currentVehicle.location}</p>
+                    </div>
+                  </div>
 
-              <div className="space-y-2 mb-6">
-                <div className="flex items-center text-gray-600">
-                  {currentVehicle.type === 'car' ? (
-                    <FaCar className="mr-2" />
-                  ) : (
-                    <FaMotorcycle className="mr-2" />
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-yellow-100 rounded-lg text-yellow-600">
+                      {/* Icon for Fuel - using generic if needed or Calendar as placeholder */}
+                      <span className="font-bold text-sm">⛽</span>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">Fuel</p>
+                      <p className="font-medium text-gray-800">{currentVehicle.fuelType}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-purple-100 rounded-lg text-purple-600">
+                      <span className="font-bold text-sm">⚙️</span>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">Transmission</p>
+                      <p className="font-medium text-gray-800">{currentVehicle.transmission}</p>
+                    </div>
+                  </div>
+
+                  {currentVehicle.seats && (
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-red-100 rounded-lg text-red-600">
+                        <span className="font-bold text-sm">💺</span>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Seats</p>
+                        <p className="font-medium text-gray-800">{currentVehicle.seats} Persons</p>
+                      </div>
+                    </div>
                   )}
-                  <span className="capitalize">{currentVehicle.type}</span>
+
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
+                      <span className="font-bold text-sm">📅</span>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">Year</p>
+                      <p className="font-medium text-gray-800">{currentVehicle.year}</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center text-gray-600">
-                  <FaMapMarkerAlt className="mr-2" />
-                  <span>{currentVehicle.location}</span>
-                </div>
-                <div className="flex items-center text-gray-600">
-                  <span>Fuel: {currentVehicle.fuelType}</span>
-                </div>
-                {currentVehicle.seats && (
-                  <div className="flex items-center text-gray-600">
-                    <span>Seats: {currentVehicle.seats}</span>
+              </div>
+
+              {/* Description & Features */}
+              <div className="mb-8">
+                <h3 className="text-lg font-semibold text-gray-800 mb-3">Description</h3>
+                <p className="text-gray-600 leading-relaxed mb-6">
+                  {currentVehicle.description || "No description available for this vehicle."}
+                </p>
+
+                {currentVehicle.features?.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Key Features</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {currentVehicle.features.map((feature, idx) => (
+                        <span key={idx} className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm font-medium border border-blue-100">
+                          {feature}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 )}
-                <div className="flex items-center text-gray-600">
-                  <span>Transmission: {currentVehicle.transmission}</span>
-                </div>
               </div>
 
-              {currentVehicle.description && (
-                <p className="text-gray-700 mb-6">{currentVehicle.description}</p>
-              )}
-
-              {currentVehicle.features?.length > 0 && (
-                <div className="mb-6">
-                  <h3 className="font-semibold mb-2">Features:</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {currentVehicle.features.map((feature, idx) => (
-                      <span
-                        key={idx}
-                        className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
-                      >
-                        {feature}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Recommendations */}
-              {recommendations.length > 0 && (
-                <div className="mb-6">
-                  <h3 className="font-semibold mb-2">Recommended for you</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {recommendations.map(rec => (
-                      <div key={rec._id} className="bg-white rounded-lg p-3 shadow-sm">
-                        <a href={`/vehicles/${rec._id}`} className="block">
-                          <img src={(rec.images && rec.images[0]) || 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&h=600&fit=crop'} alt={rec.name} className="w-full h-36 object-cover rounded" />
-                          <h4 className="mt-2 font-semibold text-sm">{rec.name}</h4>
-                          <p className="text-xs text-gray-500">{rec.brand} • ₹{rec.pricePerDay}/day</p>
-                        </a>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
+              {/* Documents */}
               {currentVehicle.documents?.length > 0 && (
-                <div className="mb-6">
-                  <h3 className="font-semibold mb-2">Documents:</h3>
-                  <ul className="list-disc list-inside text-sm text-gray-600">
+                <div className="mb-6 pt-6 border-t border-gray-100">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-2">Required Documents</h3>
+                  <ul className="flex gap-4">
                     {currentVehicle.documents.map((doc, idx) => (
                       <li key={idx}>
-                        <a href={doc} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                          {doc}
+                        <a href={doc} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:text-blue-800 hover:underline flex items-center">
+                          <span className="mr-1">📄</span> Document {idx + 1}
                         </a>
                       </li>
                     ))}
@@ -405,250 +444,227 @@ const VehicleDetail = () => {
                 </div>
               )}
 
-              <div className={`inline-block px-4 py-2 rounded-full font-semibold ${currentVehicle.available
-                ? 'bg-green-100 text-green-800'
-                : 'bg-red-100 text-red-800'
-                }`}>
-                {currentVehicle.available ? 'Available' : 'Unavailable'}
+              {/* Status Badge */}
+              <div className="pt-4">
+                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${currentVehicle.available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                  <span className={`w-2 h-2 rounded-full mr-2 ${currentVehicle.available ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                  {currentVehicle.available ? 'Available Now' : 'Currently Unavailable'}
+                </span>
               </div>
             </div>
 
-            {/* Booking Form */}
-            {currentVehicle.available && (
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-2xl font-bold text-gray-800 mb-4">Book This Vehicle</h2>
+            {/* Recommendations Row */}
+            {recommendations.length > 0 && (
+              <div className="pt-8">
+                <h2 className="text-2xl font-bold text-gray-800 mb-6">You Might Also Like</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {recommendations.map(rec => (
+                    <a key={rec._id} href={`/vehicles/${rec._id}`} className="block group">
+                      <div className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                        <div className="relative h-48 overflow-hidden">
+                          <img
+                            src={(rec.images && rec.images[0]) || 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&h=600&fit=crop'}
+                            alt={rec.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        </div>
+                        <div className="p-4">
+                          <h4 className="font-bold text-gray-800 mb-1">{rec.name}</h4>
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-gray-500">{rec.brand}</span>
+                            <span className="font-semibold text-blue-600">₹{rec.pricePerDay}/day</span>
+                          </div>
+                        </div>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
 
-                {/* Booking Options Toggle */}
+          </div>
+
+          {/* Right Column (33%) - Sticky Booking Form */}
+          <div className="lg:col-span-1 lg:sticky lg:top-4 self-start space-y-6">
+
+            {currentVehicle.available ? (
+              <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 overflow-hidden relative">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-indigo-600"></div>
+
+                <h2 className="text-xl font-bold text-gray-800 mb-6">Book This Vehicle</h2>
+
+                {/* Pricing Toggles */}
                 <div className="mb-6">
-                  <div className="flex bg-gray-100 p-1 rounded-lg mb-4">
+                  <div className="bg-gray-100 p-1 rounded-lg flex mb-4">
                     <button
                       type="button"
-                      onClick={() => {
-                        setBookingType('day');
-                        setSelectedTier('unlimited');
-                      }}
-                      className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${bookingType === 'day'
-                        ? 'bg-white text-blue-600 shadow-sm'
-                        : 'text-gray-500 hover:text-gray-700'
-                        }`}
+                      onClick={() => { setBookingType('day'); setSelectedTier('unlimited'); }}
+                      className={`flex-1 py-2 text-xs sm:text-sm font-semibold rounded-md transition-all ${bookingType === 'day' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}
                     >
-                      Day Wise
+                      Daily (Unlimited)
                     </button>
                     <button
                       type="button"
-                      onClick={() => {
-                        setBookingType('km');
-                        setSelectedTier('limit120');
-                      }}
-                      className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${bookingType === 'km'
-                        ? 'bg-white text-blue-600 shadow-sm'
-                        : 'text-gray-500 hover:text-gray-700'
-                        }`}
+                      onClick={() => { setBookingType('km'); setSelectedTier('limit120'); }}
+                      className={`flex-1 py-2 text-xs sm:text-sm font-semibold rounded-md transition-all ${bookingType === 'km' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}
                     >
-                      KM Wise
+                      Kilometer Wise
                     </button>
                   </div>
 
-                  {/* Tier Selection for KM Wise */}
                   {bookingType === 'km' && (
                     <div className="grid grid-cols-2 gap-3 mb-4">
-                      <div
+                      <button
+                        type="button"
                         onClick={() => setSelectedTier('limit120')}
-                        className={`border rounded-lg p-3 cursor-pointer transition-all ${selectedTier === 'limit120'
-                          ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500'
-                          : 'border-gray-200 hover:border-gray-300'
-                          }`}
+                        className={`border rounded-lg p-3 text-left transition-all ${selectedTier === 'limit120' ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500' : 'border-gray-200 hover:border-gray-300'}`}
                       >
-                        <div className="text-xs text-gray-500 mb-1">120 Kms/Day</div>
-                        <div className="font-bold text-gray-800">
-                          ₹{currentVehicle.rentalOptions?.daily?.limit120?.price || '-'}
-                        </div>
-                      </div>
-                      <div
+                        <div className="text-xs text-gray-500 mb-1">120 Km/Day</div>
+                        <div className="font-bold text-gray-800">₹{currentVehicle.rentalOptions?.daily?.limit120?.price || '-'}</div>
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => setSelectedTier('limit300')}
-                        className={`border rounded-lg p-3 cursor-pointer transition-all ${selectedTier === 'limit300'
-                          ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500'
-                          : 'border-gray-200 hover:border-gray-300'
-                          }`}
+                        className={`border rounded-lg p-3 text-left transition-all ${selectedTier === 'limit300' ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500' : 'border-gray-200 hover:border-gray-300'}`}
                       >
-                        <div className="text-xs text-gray-500 mb-1">300 Kms/Day</div>
-                        <div className="font-bold text-gray-800">
-                          ₹{currentVehicle.rentalOptions?.daily?.limit300?.price || '-'}
-                        </div>
-                      </div>
+                        <div className="text-xs text-gray-500 mb-1">300 Km/Day</div>
+                        <div className="font-bold text-gray-800">₹{currentVehicle.rentalOptions?.daily?.limit300?.price || '-'}</div>
+                      </button>
                     </div>
                   )}
 
-                  {/* Info for Day Wise */}
                   {bookingType === 'day' && (
-                    <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-4">
-                      <div className="text-xs text-blue-600 font-semibold mb-1">UNLIMITED KMS</div>
-                      <div className="font-bold text-gray-800">
-                        ₹{currentVehicle.rentalOptions?.daily?.unlimited?.price || '-'} <span className="text-sm font-normal text-gray-500">/day</span>
+                    <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-4 flex justify-between items-center">
+                      <div>
+                        <div className="text-xs text-blue-600 font-bold uppercase tracking-wider mb-1">Package</div>
+                        <div className="text-sm font-medium text-gray-700">Unlimited Kilometers</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xl font-bold text-gray-900">₹{currentVehicle.rentalOptions?.daily?.unlimited?.price || '-'}</div>
+                        <div className="text-xs text-gray-500">per day</div>
                       </div>
                     </div>
                   )}
                 </div>
 
+                {/* Form */}
                 <form onSubmit={handleBookNow} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Pickup Date
-                    </label>
-                    <input
-                      type="date"
-                      name="pickupDate"
-                      value={bookingData.pickupDate}
-                      onChange={handleInputChange}
-                      min={new Date().toISOString().split('T')[0]}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${errors.pickupDate ? 'border-red-500' : 'border-gray-300 focus:ring-blue-500'
-                        }`}
-                    />
-                    {errors.pickupDate && (
-                      <p className="text-red-500 text-sm mt-1">{errors.pickupDate}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Dropoff Date
-                    </label>
-                    <input
-                      type="date"
-                      name="dropoffDate"
-                      value={bookingData.dropoffDate}
-                      onChange={handleInputChange}
-                      min={bookingData.pickupDate || new Date().toISOString().split('T')[0]}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${errors.dropoffDate ? 'border-red-500' : 'border-gray-300 focus:ring-blue-500'
-                        }`}
-                    />
-                    {errors.dropoffDate && (
-                      <p className="text-red-500 text-sm mt-1">{errors.dropoffDate}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Pickup Location
-                    </label>
-                    <div className="relative">
+                  {/* Dates */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Pickup Date</label>
                       <input
-                        type="text"
-                        name="pickupLocation"
-                        value={bookingData.pickupLocation}
+                        type="date"
+                        name="pickupDate"
+                        value={bookingData.pickupDate}
                         onChange={handleInputChange}
-                        placeholder="Enter pickup location"
-                        className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${errors.pickupLocation
-                          ? 'border-red-500'
-                          : 'border-gray-300 focus:ring-blue-500'
-                          }`}
-                      />
-                      <FaMapMarkerAlt
-                        className="absolute left-3 top-3.5 text-gray-400 cursor-pointer hover:text-blue-500 z-10"
-                        onClick={() => openMap('pickup')}
+                        min={new Date().toISOString().split('T')[0]}
+                        className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.pickupDate ? 'border-red-500' : 'border-gray-300'}`}
                       />
                     </div>
-                    {errors.pickupLocation && (
-                      <p className="text-red-500 text-sm mt-1">{errors.pickupLocation}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Dropoff Location
-                    </label>
-                    <div className="relative">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Dropoff Date</label>
                       <input
-                        type="text"
-                        name="dropoffLocation"
-                        value={bookingData.dropoffLocation}
+                        type="date"
+                        name="dropoffDate"
+                        value={bookingData.dropoffDate}
                         onChange={handleInputChange}
-                        placeholder="Enter dropoff location"
-                        className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${errors.dropoffLocation
-                          ? 'border-red-500'
-                          : 'border-gray-300 focus:ring-blue-500'
-                          }`}
-                      />
-                      <FaMapMarkerAlt
-                        className="absolute left-3 top-3.5 text-gray-400 cursor-pointer hover:text-blue-500 z-10"
-                        onClick={() => openMap('dropoff')}
+                        min={bookingData.pickupDate || new Date().toISOString().split('T')[0]}
+                        className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.dropoffDate ? 'border-red-500' : 'border-gray-300'}`}
                       />
                     </div>
-                    {errors.dropoffLocation && (
-                      <p className="text-red-500 text-sm mt-1">{errors.dropoffLocation}</p>
-                    )}
                   </div>
+                  {errors.pickupDate && <p className="text-red-500 text-xs">{errors.pickupDate}</p>}
+                  {errors.dropoffDate && <p className="text-red-500 text-xs">{errors.dropoffDate}</p>}
 
-                  {/* Driver Option */}
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <div className="flex items-start">
-                      <div className="flex items-center h-5">
+                  {/* Locations */}
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Pickup Location</label>
+                      <div className="relative">
                         <input
-                          id="driver-checkbox"
-                          name="wantsDriver"
+                          type="text"
+                          name="pickupLocation"
+                          value={bookingData.pickupLocation}
+                          onChange={handleInputChange}
+                          placeholder="City, Area, or Address"
+                          className={`w-full pl-9 pr-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.pickupLocation ? 'border-red-500' : 'border-gray-300'}`}
+                        />
+                        <FaMapMarkerAlt className="absolute left-3 top-2.5 text-gray-400" />
+                        <button type="button" onClick={() => openMap('pickup')} className="absolute right-2 top-1.5 text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-gray-600">Map</button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Dropoff Location</label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          name="dropoffLocation"
+                          value={bookingData.dropoffLocation}
+                          onChange={handleInputChange}
+                          placeholder="City, Area, or Address"
+                          className={`w-full pl-9 pr-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.dropoffLocation ? 'border-red-500' : 'border-gray-300'}`}
+                        />
+                        <FaMapMarkerAlt className="absolute left-3 top-2.5 text-gray-400" />
+                        <button type="button" onClick={() => openMap('dropoff')} className="absolute right-2 top-1.5 text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-gray-600">Map</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Driver Toggle */}
+                  <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <input
+                          id="driver-toggle"
                           type="checkbox"
                           checked={wantsDriver}
                           onChange={(e) => setWantsDriver(e.target.checked)}
-                          className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded"
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                         />
+                        <label htmlFor="driver-toggle" className="ml-2 text-sm font-medium text-gray-700 select-none">Need a Driver?</label>
                       </div>
-                      <div className="ml-3 text-sm">
-                        <label htmlFor="driver-checkbox" className="font-medium text-gray-700">
-                          I need a Driver (+ ₹500/day)
-                        </label>
-                        <p className="text-gray-500 text-xs mt-1">
-                          Driver food and accommodation to be managed by customer for outstation trips.
-                        </p>
-                      </div>
+                      <span className="text-xs font-semibold text-gray-500">+₹500/day</span>
                     </div>
+                    <span className="text-xs text-amber-600 italic mt-2 block">Note: Driver's food and accommodation are extra.</span>
                   </div>
 
+                  {/* Price Summary */}
                   {totalPrice > 0 && (
-                    <div className="bg-blue-50 p-4 rounded-lg">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-gray-600">Vehicle Base Price:</span>
-                        <span className="font-semibold text-gray-800">
-                          {/* Recalculating base for display */}
-                          ₹{(() => {
-                            if (!bookingData.pickupDate || !bookingData.dropoffDate) return 0;
-                            const p = new Date(bookingData.pickupDate);
-                            const d = new Date(bookingData.dropoffDate);
-                            const days = Math.ceil(Math.abs(d - p) / (1000 * 60 * 60 * 24)) || 1;
-                            return totalPrice - (wantsDriver ? 500 * days : 0);
-                          })()}
-                        </span>
+                    <div className="bg-gray-900 rounded-lg p-4 text-white mt-4">
+                      <div className="flex justify-between items-center text-sm opacity-80 mb-1">
+                        <span>Estimated Total</span>
+                        <span>{Math.ceil(Math.abs(new Date(bookingData.dropoffDate) - new Date(bookingData.pickupDate)) / (1000 * 60 * 60 * 24)) || 1} Days</span>
                       </div>
-                      {wantsDriver && (
-                        <div className="flex justify-between items-center mb-2 text-sm text-gray-600">
-                          <span>Driver Fee:</span>
-                          <span>+ ₹{(() => {
-                            if (!bookingData.pickupDate || !bookingData.dropoffDate) return 0;
-                            const p = new Date(bookingData.pickupDate);
-                            const d = new Date(bookingData.dropoffDate);
-                            const days = Math.ceil(Math.abs(d - p) / (1000 * 60 * 60 * 24)) || 1;
-                            return 500 * days;
-                          })()}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between items-center border-t border-blue-200 pt-2">
-                        <span className="font-bold text-gray-800">Total Price:</span>
-                        <span className="text-2xl font-bold text-blue-600">₹{totalPrice}</span>
+                      <div className="flex justify-between items-end">
+                        <span className="text-2xl font-bold">₹{totalPrice}</span>
+                        <span className="text-xs opacity-60 mb-1">Including all taxes</span>
                       </div>
                     </div>
                   )}
 
                   <button
                     type="submit"
-                    className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5"
                   >
-                    {isAuthenticated ? 'Proceed to Payment' : 'Login to Book'}
+                    {isAuthenticated ? 'Proceed to Pay' : 'Login to Book'}
                   </button>
                 </form>
               </div>
+            ) : (
+              <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-red-500">
+                <h3 className="text-lg font-bold text-gray-800 mb-2">Unavailable</h3>
+                <p className="text-gray-600 text-sm">This vehicle is currently not available for booking. Please check back later or browse other vehicles.</p>
+                <button onClick={() => navigate('/vehicles')} className="mt-4 w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-2 rounded-lg transition">
+                  Browse Other Vehicles
+                </button>
+              </div>
             )}
           </div>
-        </div >
-      </div >
+
+        </div>
+      </div>
 
       {showMap && (
         <LocationPicker
@@ -656,7 +672,7 @@ const VehicleDetail = () => {
           onConfirm={handleLocationSelect}
         />
       )}
-    </div >
+    </div>
   );
 };
 
