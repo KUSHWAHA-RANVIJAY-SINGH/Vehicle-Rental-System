@@ -8,6 +8,7 @@ import { createCheckoutSession } from '../store/slices/bookingSlice';
 import Loader from '../components/Loader';
 import { FaCar, FaMotorcycle, FaMapMarkerAlt, FaCalendar, FaRupeeSign } from 'react-icons/fa';
 import LocationPicker from '../components/LocationPicker';
+import { getVehicleImageUrl, DEFAULT_CAR_IMAGE, DEFAULT_BIKE_IMAGE } from '../utils/imageUtils';
 // Stripe will be loaded dynamically when needed
 
 const VehicleDetail = () => {
@@ -35,10 +36,45 @@ const VehicleDetail = () => {
   const [errors, setErrors] = useState({});
   const [recommendations, setRecommendations] = useState([]);
 
+  const [availabilityStatus, setAvailabilityStatus] = useState({ available: true, checking: false, message: '' });
+
+  useEffect(() => {
+    const checkAvailability = async () => {
+      if (!bookingData.pickupDate || !bookingData.dropoffDate || !currentVehicle?._id) {
+        setAvailabilityStatus({ available: true, checking: false, message: '' });
+        return;
+      }
+
+      const pickup = new Date(bookingData.pickupDate);
+      const dropoff = new Date(bookingData.dropoffDate);
+      if (dropoff <= pickup) return; // Invalid date range, handled by other validation
+
+      setAvailabilityStatus(prev => ({ ...prev, checking: true }));
+      try {
+        const { data } = await api.get(`/vehicles/${currentVehicle._id}/availability?start=${encodeURIComponent(pickup.toISOString())}&end=${encodeURIComponent(dropoff.toISOString())}`);
+        if (!data.available) {
+          const conflict = data.conflict;
+          setAvailabilityStatus({
+            available: false,
+            checking: false,
+            message: `Not Available: Already booked for ${new Date(conflict.pickupDate).toLocaleDateString()} - ${new Date(conflict.dropoffDate).toLocaleDateString()}`
+          });
+        } else {
+          setAvailabilityStatus({ available: true, checking: false, message: '' });
+        }
+      } catch (err) {
+        console.warn('Availability check failed', err);
+        setAvailabilityStatus({ available: true, checking: false, message: '' });
+      }
+    };
+
+    const timeoutId = setTimeout(checkAvailability, 500); // Debounce
+    return () => clearTimeout(timeoutId);
+  }, [bookingData.pickupDate, bookingData.dropoffDate, currentVehicle?._id]);
+
   useEffect(() => {
     dispatch(fetchVehicleById(id));
-
-    // Fetch personalized recommendations for the authenticated user (if any)
+    // ... rest of existing useEffect
     const fetchRecs = async () => {
       try {
         if (isAuthenticated && user?._id) {
@@ -49,12 +85,8 @@ const VehicleDetail = () => {
         console.warn('Could not fetch recommendations', err?.response?.data || err.message);
       }
     };
-
     fetchRecs();
-
-    return () => {
-      dispatch(clearCurrentVehicle());
-    };
+    return () => { dispatch(clearCurrentVehicle()); };
   }, [dispatch, id, isAuthenticated, user?._id]);
 
   const handleInputChange = (e) => {
@@ -104,17 +136,31 @@ const VehicleDetail = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Helper: Get Price for a Tier (Fallback to derivation)
+  const getTierPrice = (tier) => {
+    if (!currentVehicle) return 0;
+    const base = currentVehicle.pricePerDay;
+
+    // 1. Try DB Rental Options
+    if (currentVehicle.rentalOptions?.daily?.[tier]?.price) {
+      return currentVehicle.rentalOptions.daily[tier].price;
+    }
+
+    // 2. Fallback Logic (if not in DB)
+    // Tiers: limit120 (85%), limit300 (100%), unlimited (130%)
+    switch (tier) {
+      case 'limit120': return Math.round(base * 0.85);
+      case 'limit300': return Math.round(base * 1.0);
+      case 'unlimited': return Math.round(base * 1.3);
+      default: return base;
+    }
+  };
+
   const calculateTotalPrice = () => {
     if (!currentVehicle || !bookingData.pickupDate || !bookingData.dropoffDate) return 0;
 
     // Get correct daily rate based on tier
-    let dailyRate = currentVehicle.pricePerDay;
-
-    if (currentVehicle.rentalOptions?.daily) {
-      if (selectedTier === 'unlimited') dailyRate = currentVehicle.rentalOptions.daily.unlimited.price;
-      else if (selectedTier === 'limit120') dailyRate = currentVehicle.rentalOptions.daily.limit120.price;
-      else if (selectedTier === 'limit300') dailyRate = currentVehicle.rentalOptions.daily.limit300.price;
-    }
+    let dailyRate = getTierPrice(selectedTier);
 
     const pickup = new Date(bookingData.pickupDate);
     const dropoff = new Date(bookingData.dropoffDate);
@@ -175,6 +221,8 @@ const VehicleDetail = () => {
         createBooking({
           vehicle: currentVehicle._id, // Use resolved _id from state
           ...bookingData,
+          bookingType,
+          rentalTier: selectedTier,
           withDriver: wantsDriver,
           totalDriverFee: wantsDriver ? (500 * chargeableDays) : 0
         })
@@ -249,23 +297,7 @@ const VehicleDetail = () => {
     );
   }
 
-  // Default placeholder images
-  const defaultCarImage = 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&h=600&fit=crop';
-  const defaultBikeImage = 'https://images.unsplash.com/photo-1558980664-1db506751751?w=800&h=600&fit=crop';
-
-  // Get image URL with proper fallback
-  const getImageUrl = () => {
-    if (currentVehicle.images && currentVehicle.images.length > 0 && currentVehicle.images[0]) {
-      const url = currentVehicle.images[0];
-      // Check if it's a valid URL (starts with http:// or https://)
-      if (url.startsWith('http://') || url.startsWith('https://')) {
-        return url;
-      }
-    }
-    return currentVehicle.type === 'car' ? defaultCarImage : defaultBikeImage;
-  };
-
-  const imageUrl = getImageUrl();
+  const imageUrl = getVehicleImageUrl(currentVehicle);
   const totalPrice = calculateTotalPrice();
 
   return (
@@ -285,8 +317,9 @@ const VehicleDetail = () => {
                 alt={currentVehicle.name || 'Vehicle'}
                 className="w-full h-[400px] object-cover"
                 onError={(e) => {
-                  if (e.target.src !== defaultCarImage && e.target.src !== defaultBikeImage) {
-                    e.target.src = currentVehicle.type === 'car' ? defaultCarImage : defaultBikeImage;
+                  const fallback = currentVehicle.type === 'bike' ? DEFAULT_BIKE_IMAGE : DEFAULT_CAR_IMAGE;
+                  if (e.target.src !== fallback) {
+                    e.target.src = fallback;
                   }
                 }}
               />
@@ -299,11 +332,14 @@ const VehicleDetail = () => {
                 ? currentVehicle.images.slice(1, 4).map((img, idx) => (
                   <div key={idx} className="bg-white rounded-lg shadow-sm overflow-hidden h-32">
                     <img
-                      src={img}
+                      src={getVehicleImageUrl(currentVehicle, idx + 1)}
                       alt={`Gallery ${idx}`}
                       className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition"
                       onError={(e) => {
-                        e.target.src = currentVehicle.type === 'car' ? defaultCarImage : defaultBikeImage;
+                        const fallback = currentVehicle.type === 'bike' ? DEFAULT_BIKE_IMAGE : DEFAULT_CAR_IMAGE;
+                        if (e.target.src !== fallback) {
+                          e.target.src = fallback;
+                        }
                       }}
                     />
                   </div>
@@ -463,7 +499,7 @@ const VehicleDetail = () => {
                       <div className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                         <div className="relative h-48 overflow-hidden">
                           <img
-                            src={(rec.images && rec.images[0]) || 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&h=600&fit=crop'}
+                            src={getVehicleImageUrl(rec)}
                             alt={rec.name}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
@@ -518,17 +554,23 @@ const VehicleDetail = () => {
                         type="button"
                         onClick={() => setSelectedTier('limit120')}
                         className={`border rounded-lg p-3 text-left transition-all ${selectedTier === 'limit120' ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500' : 'border-gray-200 hover:border-gray-300'}`}
+                      // disabled={!currentVehicle.rentalOptions?.daily?.limit120?.price}
                       >
                         <div className="text-xs text-gray-500 mb-1">120 Km/Day</div>
-                        <div className="font-bold text-gray-800">₹{currentVehicle.rentalOptions?.daily?.limit120?.price || '-'}</div>
+                        <div className="font-bold text-gray-800">
+                          ₹{getTierPrice('limit120')}
+                        </div>
                       </button>
                       <button
                         type="button"
                         onClick={() => setSelectedTier('limit300')}
                         className={`border rounded-lg p-3 text-left transition-all ${selectedTier === 'limit300' ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500' : 'border-gray-200 hover:border-gray-300'}`}
+                      // disabled={!currentVehicle.rentalOptions?.daily?.limit300?.price}
                       >
                         <div className="text-xs text-gray-500 mb-1">300 Km/Day</div>
-                        <div className="font-bold text-gray-800">₹{currentVehicle.rentalOptions?.daily?.limit300?.price || '-'}</div>
+                        <div className="font-bold text-gray-800">
+                          ₹{getTierPrice('limit300')}
+                        </div>
                       </button>
                     </div>
                   )}
@@ -540,7 +582,7 @@ const VehicleDetail = () => {
                         <div className="text-sm font-medium text-gray-700">Unlimited Kilometers</div>
                       </div>
                       <div className="text-right">
-                        <div className="text-xl font-bold text-gray-900">₹{currentVehicle.rentalOptions?.daily?.unlimited?.price || '-'}</div>
+                        <div className="text-xl font-bold text-gray-900">₹{getTierPrice('unlimited')}</div>
                         <div className="text-xs text-gray-500">per day</div>
                       </div>
                     </div>
@@ -641,14 +683,25 @@ const VehicleDetail = () => {
                         <span className="text-2xl font-bold">₹{totalPrice}</span>
                         <span className="text-xs opacity-60 mb-1">Including all taxes</span>
                       </div>
+                      {!availabilityStatus.available && (
+                        <div className="mt-3 bg-red-500 text-white text-xs font-bold px-3 py-2 rounded-md animate-pulse">
+                          {availabilityStatus.message}
+                        </div>
+                      )}
                     </div>
                   )}
 
                   <button
                     type="submit"
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5"
+                    disabled={!availabilityStatus.available || availabilityStatus.checking}
+                    className={`w-full font-bold py-3 rounded-lg shadow-md transition-all transform ${!availabilityStatus.available || availabilityStatus.checking
+                        ? 'bg-gray-400 cursor-not-allowed text-gray-200'
+                        : 'bg-blue-600 hover:bg-blue-700 text-white hover:shadow-lg hover:-translate-y-0.5'
+                      }`}
                   >
-                    {isAuthenticated ? 'Proceed to Pay' : 'Login to Book'}
+                    {availabilityStatus.checking ? 'Checking Availability...' :
+                      !availabilityStatus.available ? 'Not Available' :
+                        isAuthenticated ? 'Proceed to Pay' : 'Login to Book'}
                   </button>
                 </form>
               </div>

@@ -53,6 +53,14 @@ const bookingSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  bookingType: {
+    type: String, // 'day' or 'km'
+    default: 'day'
+  },
+  rentalTier: {
+    type: String, // 'limit120', 'limit300', 'unlimited'
+    default: 'limit300'
+  },
   status: {
     type: String,
     enum: ['pending', 'confirmed', 'cancelled', 'completed'],

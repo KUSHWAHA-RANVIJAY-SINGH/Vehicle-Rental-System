@@ -9,8 +9,9 @@ import VehicleForm from '../components/VehicleForm';
 import {
   FaPlus, FaEdit, FaTrash, FaCheckCircle, FaTimesCircle,
   FaCar, FaMoneyBillWave, FaCalendarCheck, FaClock,
-  FaChartLine, FaList, FaBars, FaEnvelope
+  FaChartLine, FaList, FaBars, FaEnvelope, FaUsers
 } from 'react-icons/fa';
+import { getVehicleImageUrl, DEFAULT_CAR_IMAGE, DEFAULT_BIKE_IMAGE } from '../utils/imageUtils';
 
 const Admin = () => {
   const dispatch = useDispatch();
@@ -25,12 +26,48 @@ const Admin = () => {
 
   const [contacts, setContacts] = useState([]);
   const [contactsLoading, setContactsLoading] = useState(false);
+  const [partners, setPartners] = useState([]);
+  const [partnersLoading, setPartnersLoading] = useState(false);
 
   useEffect(() => {
     dispatch(fetchVehicles({}));
     dispatch(fetchAllBookings());
     fetchContacts();
+    fetchPartners();
   }, [dispatch]);
+
+  const fetchPartners = async () => {
+    try {
+      setPartnersLoading(true);
+      const { data } = await api.get('/auth/partners');
+      setPartners(data);
+    } catch (error) {
+      console.error('Error fetching partners:', error);
+    } finally {
+      setPartnersLoading(false);
+    }
+  };
+
+  const handlePartnerVerification = async (id, isVerified) => {
+    try {
+      await api.put(`/auth/partners/${id}/verify`, { isVerified });
+      fetchPartners(); // Refresh list
+    } catch (error) {
+      console.error('Error updating partner status:', error);
+      alert('Failed to update status');
+    }
+  };
+
+  const handleVehicleApproval = async (id, status) => {
+    try {
+      await api.put(`/vehicles/${id}`, { status });
+      dispatch(fetchVehicles({}));
+      alert(`Vehicle ${status}`);
+    } catch (error) {
+      console.error('Error updating vehicle status:', error);
+      alert('Failed to update vehicle status');
+    }
+  };
 
   const fetchContacts = async () => {
     try {
@@ -52,15 +89,20 @@ const Admin = () => {
   );
 
   const filteredBookings = bookings.filter(b =>
-    b.vehicle.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (b.vehicle?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (b.user?.username || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    b.status.toLowerCase().includes(searchTerm.toLowerCase())
+    (b.status || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const filteredContacts = contacts.filter(c =>
     c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.message.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredPartners = partners.filter(p =>
+    p.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleDeleteVehicle = async (id) => {
@@ -82,6 +124,7 @@ const Admin = () => {
   const activeBookings = bookings.filter((b) => b.status === 'confirmed').length;
   const pendingBookings = bookings.filter((b) => b.status === 'pending').length;
   const completedBookings = bookings.filter((b) => b.status === 'completed').length;
+  const pendingVehicles = vehicles.filter((v) => v.status === 'Pending').length;
 
   const StatCard = ({ title, value, icon: Icon, color, subtext }) => (
     <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
@@ -128,6 +171,7 @@ const Admin = () => {
           <SidebarItem id="overview" icon={FaChartLine} label="Overview" />
           <SidebarItem id="vehicles" icon={FaCar} label="Vehicles" />
           <SidebarItem id="bookings" icon={FaList} label="Bookings" />
+          <SidebarItem id="partners" icon={FaUsers} label="Partners" />
           <SidebarItem id="messages" icon={FaEnvelope} label="Messages" />
         </nav>
       </aside>
@@ -163,7 +207,14 @@ const Admin = () => {
                   value={`₹${totalRevenue.toLocaleString()}`}
                   icon={FaMoneyBillWave}
                   color="bg-green-500"
-                  subtext="+12% from last month"
+                  subtext="Gross Revenue Service fees"
+                />
+                <StatCard
+                  title="Net Commission"
+                  value={`₹${Math.round(totalRevenue * 0.1).toLocaleString()}`}
+                  icon={FaChartLine}
+                  color="bg-teal-500"
+                  subtext="10% Platform Fee"
                 />
                 <StatCard
                   title="Total Vehicles"
@@ -184,6 +235,13 @@ const Admin = () => {
                   icon={FaClock}
                   color="bg-yellow-500"
                   subtext="Requires attention"
+                />
+                <StatCard
+                  title="Pending Vehicles"
+                  value={pendingVehicles}
+                  icon={FaCar}
+                  color="bg-orange-500"
+                  subtext="Waiting for approval"
                 />
               </div>
 
@@ -255,37 +313,51 @@ const Admin = () => {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredVehicles.map((vehicle) => {
-                    const defaultCarImage = 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&h=600&fit=crop';
-                    const defaultBikeImage = 'https://images.unsplash.com/photo-1558980664-1db506751751?w=800&h=600&fit=crop';
-
-                    const getImageUrl = () => {
-                      if (vehicle.images && vehicle.images.length > 0 && vehicle.images[0]) {
-                        const url = vehicle.images[0];
-                        if (url.startsWith('http://') || url.startsWith('https://')) return url;
-                      }
-                      return vehicle.type === 'car' ? defaultCarImage : defaultBikeImage;
-                    };
-
                     return (
                       <div key={vehicle._id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition">
                         <div className="h-48 overflow-hidden relative">
                           <img
-                            src={getImageUrl()}
+                            src={getVehicleImageUrl(vehicle)}
                             alt={vehicle.name}
                             className="w-full h-full object-cover"
                             onError={(e) => {
-                              if (e.target.src !== defaultCarImage && e.target.src !== defaultBikeImage) {
-                                e.target.src = vehicle.type === 'car' ? defaultCarImage : defaultBikeImage;
+                              const fallback = vehicle.type === 'bike' ? DEFAULT_BIKE_IMAGE : DEFAULT_CAR_IMAGE;
+                              if (e.target.src !== fallback) {
+                                e.target.src = fallback;
                               }
                             }}
                           />
-                          <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded-md text-xs font-bold shadow-sm">
-                            ₹{vehicle.pricePerDay}/day
+                          <div className="absolute top-2 right-2 flex flex-col items-end gap-1">
+                            <div className="bg-white px-2 py-1 rounded-md text-xs font-bold shadow-sm">
+                              ₹{vehicle.pricePerDay}/day
+                            </div>
+                            {vehicle.status === 'Pending' && (
+                              <div className="bg-yellow-500 text-white px-2 py-1 rounded-md text-xs font-bold shadow-sm animate-pulse">
+                                Pending Approval
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div className="p-4">
                           <h3 className="text-lg font-bold text-gray-800 mb-1">{vehicle.name}</h3>
                           <p className="text-sm text-gray-500 mb-4">{vehicle.brand} {vehicle.model}</p>
+
+                          {vehicle.status === 'Pending' && (
+                            <div className="mb-4 flex gap-2">
+                              <button
+                                onClick={() => handleVehicleApproval(vehicle._id, 'Approved')}
+                                className="flex-1 bg-green-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-green-700 transition"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={() => handleVehicleApproval(vehicle._id, 'Rejected')}
+                                className="flex-1 bg-red-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-red-700 transition"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          )}
                           <div className="flex space-x-2">
                             <button
                               onClick={() => {
@@ -345,8 +417,8 @@ const Admin = () => {
                         {filteredBookings.map((booking) => (
                           <tr key={booking._id} className="hover:bg-gray-50">
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-medium text-gray-900">{booking.vehicle.name}</div>
-                              <div className="text-sm text-gray-500">{booking.vehicle.brand}</div>
+                              <div className="text-sm font-medium text-gray-900">{booking.vehicle?.name || 'Unknown Vehicle'}</div>
+                              <div className="text-sm text-gray-500">{booking.vehicle?.brand || '-'}</div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="text-sm text-gray-900">{booking.user?.username}</div>
@@ -460,11 +532,99 @@ const Admin = () => {
               )}
             </div>
           )}
+
+          {activeTab === 'partners' && (
+            <div className="space-y-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <h2 className="text-2xl font-bold text-gray-800">Partner Verification</h2>
+                <input
+                  type="text"
+                  placeholder="Search partners..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {partnersLoading ? (
+                <Loader />
+              ) : (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Partner</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bank Details</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {filteredPartners.map((partner) => (
+                          <tr key={partner._id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="h-10 w-10 flex-shrink-0">
+                                  <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
+                                    {partner.username.charAt(0).toUpperCase()}
+                                  </div>
+                                </div>
+                                <div className="ml-4">
+                                  <div className="text-sm font-medium text-gray-900">{partner.username}</div>
+                                  <div className="text-sm text-gray-500">{partner.email}</div>
+                                  <div className="text-xs text-gray-400">{partner.phone}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {partner.partnerDetails ? (
+                                <div className="text-sm text-gray-500">
+                                  <div>Acct: {partner.partnerDetails.bankAccount || 'N/A'}</div>
+                                  <div>IFSC: {partner.partnerDetails.ifsc || 'N/A'}</div>
+                                  <div>PAN: {partner.partnerDetails.panCard || 'N/A'}</div>
+                                </div>
+                              ) : (
+                                <span className="text-sm text-gray-400">No Details</span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                ${partner.isVerified ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                                {partner.isVerified ? 'Verified' : 'Pending'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              {!partner.isVerified ? (
+                                <button
+                                  onClick={() => handlePartnerVerification(partner._id, true)}
+                                  className="text-white bg-green-500 hover:bg-green-600 px-3 py-1 rounded-md text-xs mr-2 transition"
+                                >
+                                  Approve
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handlePartnerVerification(partner._id, false)}
+                                  className="text-white bg-red-500 hover:bg-red-600 px-3 py-1 rounded-md text-xs transition"
+                                >
+                                  Revoke
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </main>
-      </div>
+      </div >
 
       {/* Vehicle Form Modal */}
-      <Modal
+      < Modal
         isOpen={showVehicleModal}
         onClose={() => {
           setShowVehicleModal(false);
@@ -480,8 +640,8 @@ const Admin = () => {
             dispatch(fetchVehicles({}));
           }}
         />
-      </Modal>
-    </div>
+      </Modal >
+    </div >
   );
 };
 

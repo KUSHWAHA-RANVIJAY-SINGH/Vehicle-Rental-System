@@ -1,9 +1,22 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
 import Vehicle from '../models/Vehicle.js';
-import { protect, admin } from '../middleware/authMiddleware.js';
+import { protect, admin, protectPartner } from '../middleware/authMiddleware.js';
+import upload from '../middleware/uploadMiddleware.js';
 
 const router = express.Router();
+
+// @route   GET /api/vehicles/my-vehicles
+// @desc    Get logged in partner's vehicles
+// @access  Private (Partner/Admin)
+router.get('/my-vehicles', protect, protectPartner, async (req, res) => {
+  try {
+    const vehicles = await Vehicle.find({ ownerId: req.user._id }).sort({ createdAt: -1 });
+    res.json(vehicles);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
 
 // @route   GET /api/vehicles
 // @desc    Get all vehicles with optional filters
@@ -143,9 +156,9 @@ router.get('/:id', async (req, res) => {
 });
 
 // @route   POST /api/vehicles
-// @desc    Create a new vehicle (admin only)
-// @access  Private/Admin
-router.post('/', protect, admin, [
+// @desc    Create a new vehicle (Partner/Admin)
+// @access  Private
+router.post('/', protect, protectPartner, upload.array('images', 5), [
   body('name').notEmpty().withMessage('Name is required'),
   body('type').isIn(['car', 'bike']).withMessage('Type must be car or bike'),
   body('brand').notEmpty().withMessage('Brand is required'),
@@ -159,7 +172,33 @@ router.post('/', protect, admin, [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const vehicle = await Vehicle.create(req.body);
+    let imagePaths = [];
+
+    // 1. Add uploaded files
+    if (req.files) {
+      imagePaths = req.files.map(file => file.path);
+    }
+
+    // 2. Add provided URLs (from req.body.images)
+    // frontend might send "images" as a comma-separated string or array
+    if (req.body.images) {
+      let urls = [];
+      if (Array.isArray(req.body.images)) {
+        urls = req.body.images;
+      } else if (typeof req.body.images === 'string') {
+        urls = req.body.images.split(',').map(u => u.trim()).filter(Boolean);
+      }
+      imagePaths = [...imagePaths, ...urls];
+    }
+
+    const vehicleData = {
+      ...req.body,
+      ownerId: req.user._id,
+      status: 'Pending', // Default to pending
+      images: imagePaths
+    };
+
+    const vehicle = await Vehicle.create(vehicleData);
     res.status(201).json(vehicle);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -167,19 +206,63 @@ router.post('/', protect, admin, [
 });
 
 // @route   PUT /api/vehicles/:id
-// @desc    Update a vehicle (admin only)
-// @access  Private/Admin
-router.put('/:id', protect, admin, async (req, res) => {
+// @desc    Update a vehicle (Partner/Admin)
+// @access  Private
+router.put('/:id', protect, upload.array('images', 5), async (req, res) => {
   try {
-    const vehicle = await Vehicle.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    );
+    let vehicle = await Vehicle.findById(req.params.id);
 
     if (!vehicle) {
       return res.status(404).json({ message: 'Vehicle not found' });
     }
+
+    // Check ownership (if not admin)
+    if (req.user.role !== 'admin' && vehicle.ownerId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to update this vehicle' });
+    }
+
+    // Handle Image Updates
+    let imagePaths = [];
+
+    // 1. Add uploaded files
+    if (req.files) {
+      if (Array.isArray(req.files)) {
+        imagePaths = req.files.map(file => file.path);
+      }
+    }
+
+    // 2. Add provided URLs/Existing Images (from req.body.images)
+    if (req.body.images) {
+      let urls = [];
+      if (Array.isArray(req.body.images)) {
+        urls = req.body.images;
+      } else if (typeof req.body.images === 'string') {
+        // If single string or comma-separated
+        urls = req.body.images.split(',').map(u => u.trim()).filter(Boolean);
+      }
+      imagePaths = [...imagePaths, ...urls];
+    }
+
+    // If no images provided at all in update, preserve existing? 
+    // Usually invalid if we want to allow deleting all images, but let's assume if 'images' field is missing from body (JSON), 
+    // we might want to keep old ones. 
+    // BUT since we are sending FormData, 'images' key might be present but empty if all deleted.
+    // Logic: If 'images' key exists in body or files, use that. If completely absent, keep old?
+    // Frontend keeps `existingImages` and sends them back. So `imagePaths` should be the final state.
+
+    const updateData = { ...req.body };
+
+    // Only update images if we have processed some (or if explicit empty list sent)
+    // If the frontend sends the list, we use it.
+    if (imagePaths.length > 0 || req.body.images) {
+      updateData.images = imagePaths;
+    }
+
+    vehicle = await Vehicle.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true, runValidators: true }
+    );
 
     res.json(vehicle);
   } catch (error) {

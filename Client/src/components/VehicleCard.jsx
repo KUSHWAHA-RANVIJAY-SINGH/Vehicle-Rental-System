@@ -1,23 +1,13 @@
 import { Link } from 'react-router-dom';
 import { FaCar, FaMotorcycle, FaMapMarkerAlt, FaStar, FaGasPump, FaCogs } from 'react-icons/fa';
+import { getVehicleImageUrl, DEFAULT_CAR_IMAGE, DEFAULT_BIKE_IMAGE } from '../utils/imageUtils';
 
 const VehicleCard = ({ vehicle }) => {
-  // Default placeholder images based on vehicle type
-  const defaultCarImage = 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&h=600&fit=crop';
-  const defaultBikeImage = 'https://images.unsplash.com/photo-1558980664-1db506751751?w=800&h=600&fit=crop';
+  /* 
+   * Replaced with utility function
+   */
 
-  // Get image URL with proper fallback
-  const getImageUrl = () => {
-    if (vehicle.images && vehicle.images.length > 0 && vehicle.images[0]) {
-      const url = vehicle.images[0];
-      if (url.startsWith('http://') || url.startsWith('https://')) {
-        return url;
-      }
-    }
-    return vehicle.type === 'car' ? defaultCarImage : defaultBikeImage;
-  };
-
-  const imageUrl = getImageUrl();
+  const imageUrl = getVehicleImageUrl(vehicle);
   const isAvailable = vehicle.available;
 
   return (
@@ -28,8 +18,9 @@ const VehicleCard = ({ vehicle }) => {
           alt={vehicle.name || 'Vehicle'}
           className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500 will-change-transform"
           onError={(e) => {
-            if (e.target.src !== defaultCarImage && e.target.src !== defaultBikeImage) {
-              e.target.src = vehicle.type === 'car' ? defaultCarImage : defaultBikeImage;
+            const fallback = vehicle.type === 'bike' ? DEFAULT_BIKE_IMAGE : DEFAULT_CAR_IMAGE;
+            if (e.target.src !== fallback) {
+              e.target.src = fallback;
             }
           }}
           loading="lazy"
@@ -73,7 +64,7 @@ const VehicleCard = ({ vehicle }) => {
         {vehicle.registrationNumber && (
           <p className="text-gray-400 text-xs mb-1">Reg: {vehicle.registrationNumber}</p>
         )}
-        {vehicle.odometerKm !== undefined && (
+        {vehicle.odometerKm !== undefined && vehicle.odometerKm !== null && (
           <p className="text-gray-400 text-xs mb-3">Odo: {vehicle.odometerKm.toLocaleString()} km</p>
         )}
 

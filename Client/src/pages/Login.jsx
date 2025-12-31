@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
-import { login, clearError } from "../store/slices/authSlice";
+import { login, googleLogin, clearError } from "../store/slices/authSlice";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { GoogleLogin } from '@react-oauth/google';
+import axios from 'axios';
 
 const Login = () => {
   const dispatch = useDispatch();
@@ -28,6 +30,15 @@ const Login = () => {
       await dispatch(login(formData)).unwrap();
       navigate("/dashboard");
     } catch (err) { }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      await dispatch(googleLogin(credentialResponse.credential)).unwrap();
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Google Login Error', error);
+    }
   };
 
   return (
@@ -98,6 +109,21 @@ const Login = () => {
           >
             {loading ? "Signing in..." : "Sign In"}
           </button>
+
+          <div className="relative flex py-2 items-center">
+            <div className="flex-grow border-t border-gray-300"></div>
+            <span className="flex-shrink-0 mx-4 text-gray-400 text-sm">Or continue with</span>
+            <div className="flex-grow border-t border-gray-300"></div>
+          </div>
+
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => {
+                console.log('Login Failed');
+              }}
+            />
+          </div>
 
           {/* Register Link */}
           <p className="text-center text-sm text-gray-600">

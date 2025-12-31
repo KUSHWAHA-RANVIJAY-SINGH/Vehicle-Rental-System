@@ -20,7 +20,9 @@ router.post('/', protect, [
   body('pickupDate').isISO8601().withMessage('Valid pickup date is required'),
   body('dropoffDate').isISO8601().withMessage('Valid dropoff date is required'),
   body('pickupLocation').notEmpty().withMessage('Pickup location is required'),
-  body('dropoffLocation').notEmpty().withMessage('Dropoff location is required')
+  body('dropoffLocation').notEmpty().withMessage('Dropoff location is required'),
+  body('rentalTier').optional().isString(),
+  body('bookingType').optional().isIn(['day', 'km'])
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -79,8 +81,35 @@ router.post('/', protect, [
     // Calculate total price
     const diffTime = Math.abs(dropoff - pickup);
     const totalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    // Calculate daily rate based on tier
+    let dailyRate = vehicleData.pricePerDay;
+    const { rentalTier, withDriver, bookingType } = req.body;
+
+    // Use usage-based logic matching frontend
+    // Tiers: limit120 (85%), limit300 (100%), unlimited (130%)
+    if (rentalTier === 'limit120') {
+      dailyRate = Math.round(vehicleData.pricePerDay * 0.85);
+    } else if (rentalTier === 'limit300') {
+      dailyRate = Math.round(vehicleData.pricePerDay * 1.0);
+    } else if (rentalTier === 'unlimited') {
+      dailyRate = Math.round(vehicleData.pricePerDay * 1.3);
+    }
+
+    // Check for DB-specific overrides if they exist (future proofing)
+    if (vehicleData.rentalOptions?.daily?.[rentalTier]?.price) {
+      dailyRate = vehicleData.rentalOptions.daily[rentalTier].price;
+    }
+
     // Calculate total price in INR
-    const totalPrice = totalDays * vehicleData.pricePerDay;
+    let totalPrice = totalDays * dailyRate;
+
+    // Add driver fee
+    let totalDriverFee = 0;
+    if (withDriver) {
+      totalDriverFee = 500 * totalDays;
+      totalPrice += totalDriverFee;
+    }
 
     const booking = await Booking.create({
       user: req.user._id,
@@ -131,6 +160,27 @@ router.get('/', protect, admin, async (req, res) => {
     const bookings = await Booking.find()
       .populate('vehicle')
       .populate('user', 'username email')
+      .sort({ createdAt: -1 });
+
+    res.json(bookings);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// @route   GET /api/bookings/partner-bookings
+// @desc    Get bookings for partner's vehicles
+// @access  Private (Partner)
+router.get('/partner-bookings', protect, async (req, res) => {
+  try {
+    // 1. Find all vehicles owned by the partner
+    const vehicles = await Vehicle.find({ ownerId: req.user._id }).select('_id');
+    const vehicleIds = vehicles.map(v => v._id);
+
+    // 2. Find bookings for these vehicles
+    const bookings = await Booking.find({ vehicle: { $in: vehicleIds } })
+      .populate('vehicle')
+      .populate('user', 'username email phone')
       .sort({ createdAt: -1 });
 
     res.json(bookings);

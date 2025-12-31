@@ -86,6 +86,22 @@ const vehicleSchema = new mongoose.Schema({
   insuranceExpiry: {
     type: Date
   },
+  ownerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  status: {
+    type: String,
+    enum: ['Pending', 'Approved', 'Rejected'],
+    default: 'Pending'
+  },
+  adminComments: {
+    type: String
+  },
+  availability: [{
+    type: Date
+  }],
   documents: {
     type: [String],
     default: []

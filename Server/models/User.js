@@ -20,13 +20,29 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: true,
+    required: function () { return !this.googleId; },
     minlength: 6
+  },
+  googleId: {
+    type: String,
+    unique: true,
+    sparse: true
   },
   role: {
     type: String,
-    enum: ['user', 'admin'],
+    enum: ['user', 'admin', 'partner'],
     default: 'user'
+  },
+  isVerified: {
+    type: Boolean,
+    default: false
+  },
+  partnerDetails: {
+    bankAccount: { type: String },
+    ifsc: { type: String },
+    panCard: { type: String }, // URL or Number? Assuming Number/String for now based on context, or could be image URL. Let's assume String data.
+    // If user meant images, they usually say "Image". "panCard" inside partnerDetails along with bank stuff suggests data.
+    // But typically KYC involves images. Let's keep it generic String.
   },
   phone: {
     type: String,
