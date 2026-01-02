@@ -85,11 +85,11 @@ const Vehicles = () => {
 
         {/* Category Filter Tabs */}
         <div className="flex justify-center mb-10">
-          <div className="bg-white p-1.5 rounded-full shadow-lg border border-slate-100 inline-flex space-x-1">
+          <div className="bg-white p-1.5 rounded-2xl md:rounded-full shadow-lg border border-slate-100 inline-flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-1 w-full md:w-auto">
             <button
               onClick={() => handleFilterChange('type', '')}
-              className={`px-8 py-3 rounded-full text-sm font-bold transition-all duration-300 ${!filters.type
-                ? 'bg-blue-600 text-white shadow-md transform scale-105'
+              className={`px-8 py-3 rounded-xl md:rounded-full text-sm font-bold transition-all duration-300 w-full md:w-auto ${!filters.type
+                ? 'bg-blue-600 text-white shadow-md transform scale-100 md:scale-105'
                 : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
                 }`}
             >
@@ -97,8 +97,8 @@ const Vehicles = () => {
             </button>
             <button
               onClick={() => handleFilterChange('type', 'bike')}
-              className={`px-8 py-3 rounded-full text-sm font-bold transition-all duration-300 flex items-center ${filters.type === 'bike'
-                ? 'bg-blue-600 text-white shadow-md transform scale-105'
+              className={`px-8 py-3 rounded-xl md:rounded-full text-sm font-bold transition-all duration-300 flex items-center justify-center w-full md:w-auto ${filters.type === 'bike'
+                ? 'bg-blue-600 text-white shadow-md transform scale-100 md:scale-105'
                 : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
                 }`}
             >
@@ -106,8 +106,8 @@ const Vehicles = () => {
             </button>
             <button
               onClick={() => handleFilterChange('type', 'car')}
-              className={`px-8 py-3 rounded-full text-sm font-bold transition-all duration-300 flex items-center ${filters.type === 'car'
-                ? 'bg-blue-600 text-white shadow-md transform scale-105'
+              className={`px-8 py-3 rounded-xl md:rounded-full text-sm font-bold transition-all duration-300 flex items-center justify-center w-full md:w-auto ${filters.type === 'car'
+                ? 'bg-blue-600 text-white shadow-md transform scale-100 md:scale-105'
                 : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
                 }`}
             >
