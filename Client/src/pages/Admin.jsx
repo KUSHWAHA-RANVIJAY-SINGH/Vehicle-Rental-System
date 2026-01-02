@@ -21,7 +21,7 @@ const Admin = () => {
   const [showVehicleModal, setShowVehicleModal] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 1024);
   const [searchTerm, setSearchTerm] = useState('');
 
   const [contacts, setContacts] = useState([]);
@@ -34,6 +34,17 @@ const Admin = () => {
     dispatch(fetchAllBookings());
     fetchContacts();
     fetchPartners();
+
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setSidebarOpen(true);
+      } else {
+        setSidebarOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, [dispatch]);
 
   const fetchPartners = async () => {

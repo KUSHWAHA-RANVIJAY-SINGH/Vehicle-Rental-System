@@ -36,7 +36,7 @@ const MyVehicles = () => {
 
          return (
                   <div>
-                           <div className="flex justify-between items-center mb-6">
+                           <div className="flex flex-wrap justify-between items-center mb-6 gap-2">
                                     <h2 className="text-2xl font-bold text-gray-800">My Vehicles</h2>
                                     <span className="text-gray-500 text-sm">Total: {vehicles.length}</span>
                            </div>
