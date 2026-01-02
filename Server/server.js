@@ -14,7 +14,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:5174', 'http://127.0.0.1:5174', process.env.FRONTEND_URL].filter(Boolean),
+  origin: ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:5174', 'http://127.0.0.1:5174', 'https://vehicle-rental-system-wheat-six.vercel.app', 'https://vehicle-rental-system-d7aa.vercel.app', process.env.FRONTEND_URL].filter(Boolean),
   credentials: true
 }));
 
@@ -54,6 +54,7 @@ if (process.env.NODE_ENV !== 'test') {
 
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+
   });
 }
 
