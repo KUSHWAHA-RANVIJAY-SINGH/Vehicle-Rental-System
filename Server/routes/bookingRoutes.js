@@ -111,7 +111,30 @@ router.post('/', protect, [
       totalPrice += totalDriverFee;
     }
 
+    // Generate unique Booking ID
+    const generateBookingId = () => {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let result = 'BK-';
+      for (let i = 0; i < 6; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return result;
+    };
+
+    let bookingId = generateBookingId();
+    // Ensure uniqueness (simple check)
+    let isUnique = false;
+    while (!isUnique) {
+      const existing = await Booking.findOne({ bookingId });
+      if (!existing) {
+        isUnique = true;
+      } else {
+        bookingId = generateBookingId();
+      }
+    }
+
     const booking = await Booking.create({
+      bookingId,
       user: req.user._id,
       vehicle,
       pickupDate,

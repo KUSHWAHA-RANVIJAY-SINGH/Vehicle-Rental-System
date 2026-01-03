@@ -71,6 +71,7 @@ export const verifyPayment = async (req, res) => {
                            res.json({
                                     success: true,
                                     message: 'Payment has been verified',
+                                    bookingId: booking.bookingId
                            });
                   } else {
                            res.status(400).json({

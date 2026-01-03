@@ -301,6 +301,7 @@ const Dashboard = () => {
                 <div key={booking._id} className="bg-white rounded-lg shadow-md p-6">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
                     <div>
+                      <div className="text-sm text-gray-500 mb-1">Booking ID: <span className="font-mono font-bold text-gray-700">{booking.bookingId || 'N/A'}</span></div>
                       {booking.vehicle ? (
                         <>
                           <Link

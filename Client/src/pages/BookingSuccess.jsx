@@ -8,16 +8,22 @@ const BookingSuccess = () => {
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get('session_id');
 
+  const [bookingId, setBookingId] = useState(null);
+
   useEffect(() => {
     const confirmPayment = async () => {
       if (sessionId === 'dummy_success') {
-        // For dummy payments, we don't need to confirm with the server
+        // For dummy payments, we might not have a real booking ID handy unless passed via params
+        // For now, let's assume real flow
         return;
       }
 
       if (sessionId) {
         try {
-          await api.post('/payment/confirm', { sessionId });
+          const { data } = await api.post('/payment/confirm', { sessionId });
+          if (data.bookingId) {
+            setBookingId(data.bookingId);
+          }
         } catch (error) {
           console.error('Payment confirmation error:', error);
         }
@@ -32,6 +38,12 @@ const BookingSuccess = () => {
       <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8 text-center">
         <FaCheckCircle className="text-6xl text-green-500 mx-auto mb-4" />
         <h1 className="text-3xl font-bold text-gray-800 mb-4">Booking Confirmed!</h1>
+        {bookingId && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <p className="text-sm text-blue-600 mb-1">Your Booking ID</p>
+            <p className="text-2xl font-mono font-bold text-blue-800">{bookingId}</p>
+          </div>
+        )}
         <p className="text-gray-600 mb-6">
           Your payment has been processed successfully. You will receive a confirmation email shortly.
         </p>

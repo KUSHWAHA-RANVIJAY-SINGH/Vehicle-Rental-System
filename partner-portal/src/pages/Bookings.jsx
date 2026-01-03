@@ -45,7 +45,7 @@ const Bookings = () => {
                                                                {bookings.length > 0 ? bookings.map((booking) => (
                                                                         <tr key={booking._id} className="hover:bg-gray-50 transition-colors">
                                                                                  <td className="px-6 py-4 text-xs font-mono text-gray-500">
-                                                                                          {booking._id.slice(-6).toUpperCase()}
+                                                                                          {booking.bookingId || booking._id.slice(-6).toUpperCase()}
                                                                                  </td>
                                                                                  <td className="px-6 py-4">
                                                                                           <div className="font-medium text-gray-800">{booking.vehicle?.name || 'Unknown'}</div>
@@ -61,9 +61,9 @@ const Bookings = () => {
                                                                                  </td>
                                                                                  <td className="px-6 py-4">
                                                                                           <span className={`px-3 py-1 rounded-full text-xs font-medium ${booking.status === 'completed' ? 'bg-green-100 text-green-700' :
-                                                                                                            booking.status === 'confirmed' ? 'bg-blue-100 text-blue-700' :
-                                                                                                                     booking.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                                                                                                                              'bg-red-100 text-red-700'
+                                                                                                   booking.status === 'confirmed' ? 'bg-blue-100 text-blue-700' :
+                                                                                                            booking.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                                                                                                     'bg-red-100 text-red-700'
                                                                                                    }`}>
                                                                                                    {booking.status}
                                                                                           </span>
