@@ -220,9 +220,20 @@ const Dashboard = () => {
                 <div className="mb-4">
                   <p className="text-green-600 text-sm font-medium mb-2">✓ Uploaded</p>
                   <img
-                    src={`http://localhost:5000/${user.drivingLicense}`}
+                    src={(() => {
+                      const url = user.drivingLicense;
+                      if (!url) return '';
+                      if (url.startsWith('http')) return url;
+                      if (url.startsWith('data:')) return url;
+                      const serverUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/api$/, '');
+                      return `${serverUrl}/${url.startsWith('/') ? url.slice(1) : url}`;
+                    })()}
                     alt="Driving License"
                     className="h-32 object-cover rounded border"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = 'https://via.placeholder.com/150?text=Error';
+                    }}
                   />
                 </div>
               ) : (
@@ -237,9 +248,20 @@ const Dashboard = () => {
                 <div className="mb-4">
                   <p className="text-green-600 text-sm font-medium mb-2">✓ Uploaded</p>
                   <img
-                    src={`http://localhost:5000/${user.aadharCard}`}
+                    src={(() => {
+                      const url = user.aadharCard;
+                      if (!url) return '';
+                      if (url.startsWith('http')) return url;
+                      if (url.startsWith('data:')) return url;
+                      const serverUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/api$/, '');
+                      return `${serverUrl}/${url.startsWith('/') ? url.slice(1) : url}`;
+                    })()}
                     alt="Aadhar Card"
                     className="h-32 object-cover rounded border"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = 'https://via.placeholder.com/150?text=Error';
+                    }}
                   />
                 </div>
               ) : (

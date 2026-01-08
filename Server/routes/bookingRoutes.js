@@ -4,6 +4,7 @@ import Booking from '../models/Booking.js';
 import Vehicle from '../models/Vehicle.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 import { createOrder, verifyPayment } from '../controllers/paymentController.js';
+import { calculateSurge } from '../utils/pricing.js'; // Import here
 
 const router = express.Router();
 
@@ -78,9 +79,15 @@ router.post('/', protect, [
       });
     }
 
+
     // Calculate total price
     const diffTime = Math.abs(dropoff - pickup);
     const totalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    // Get Surge Multiplier
+    const surgeData = await calculateSurge(vehicleData, pickup, dropoff);
+    const surgeMultiplier = surgeData.multiplier;
+
 
     // Calculate daily rate based on tier
     let dailyRate = vehicleData.pricePerDay;
@@ -109,6 +116,11 @@ router.post('/', protect, [
     if (withDriver) {
       totalDriverFee = 500 * totalDays;
       totalPrice += totalDriverFee;
+    }
+
+    // Apply Surge Pricing
+    if (surgeMultiplier > 1.0) {
+      totalPrice = Math.round(totalPrice * surgeMultiplier);
     }
 
     // Generate unique Booking ID
@@ -142,7 +154,7 @@ router.post('/', protect, [
       pickupLocation,
       dropoffLocation,
       totalDays,
-      totalPrice
+      totalPrice // Price now includes surge
     });
 
     await booking.populate('vehicle');

@@ -9,9 +9,13 @@ import VehicleForm from '../components/VehicleForm';
 import {
   FaPlus, FaEdit, FaTrash, FaCheckCircle, FaTimesCircle,
   FaCar, FaMoneyBillWave, FaCalendarCheck, FaClock,
-  FaChartLine, FaList, FaBars, FaEnvelope, FaUsers
+  FaChartLine, FaList, FaBars, FaEnvelope, FaUsers, FaFilter
 } from 'react-icons/fa';
 import { getVehicleImageUrl, DEFAULT_CAR_IMAGE, DEFAULT_BIKE_IMAGE } from '../utils/imageUtils';
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend
+} from 'recharts';
 
 const Admin = () => {
   const dispatch = useDispatch();
@@ -23,6 +27,7 @@ const Admin = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 1024);
   const [searchTerm, setSearchTerm] = useState('');
+  const [dateFilter, setDateFilter] = useState('all'); // '7days', 'month', 'all'
 
   const [contacts, setContacts] = useState([]);
   const [contactsLoading, setContactsLoading] = useState(false);
@@ -128,14 +133,57 @@ const Admin = () => {
     dispatch(fetchAllBookings());
   };
 
-  const totalRevenue = bookings
+  // Date Filtering Logic
+  const getFilteredBookings = () => {
+    const now = new Date();
+    if (dateFilter === '7days') {
+      const sevenDaysAgo = new Date(now.setDate(now.getDate() - 7));
+      return bookings.filter(b => new Date(b.createdAt) >= sevenDaysAgo);
+    } else if (dateFilter === 'month') {
+      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      return bookings.filter(b => new Date(b.createdAt) >= firstDayOfMonth);
+    }
+    return bookings;
+  };
+
+  const filteredStatsBookings = getFilteredBookings();
+
+  // Metrics Calculation based on Filtered Data
+  const totalRevenue = filteredStatsBookings
     .filter((b) => b.paymentStatus === 'paid')
     .reduce((sum, b) => sum + b.totalPrice, 0);
 
-  const activeBookings = bookings.filter((b) => b.status === 'confirmed').length;
-  const pendingBookings = bookings.filter((b) => b.status === 'pending').length;
-  const completedBookings = bookings.filter((b) => b.status === 'completed').length;
+  const activeBookings = filteredStatsBookings.filter((b) => b.status === 'confirmed').length;
+  const pendingBookings = filteredStatsBookings.filter((b) => b.status === 'pending').length;
+  const completedBookings = filteredStatsBookings.filter((b) => b.status === 'completed').length;
+  const cancelledBookings = filteredStatsBookings.filter((b) => b.status === 'cancelled').length;
+
   const pendingVehicles = vehicles.filter((v) => v.status === 'Pending').length;
+
+  // Chart Data Preparation
+  const chartData = filteredStatsBookings
+    .filter(b => b.paymentStatus === 'paid')
+    .reduce((acc, curr) => {
+      const date = new Date(curr.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const existing = acc.find(item => item.date === date);
+      if (existing) {
+        existing.amount += curr.totalPrice;
+      } else {
+        acc.push({ date, amount: curr.totalPrice });
+      }
+      return acc;
+    }, [])
+    .sort((a, b) => new Date(a.date) - new Date(b.date)); // Sort mostly works, but for reliable sorting we might need timestamp. using Date parse works enough for recent.
+
+  // If filtered by all time, maybe aggregate by month? For now, day-wise is fine for recent.
+  // For 'all' time with lots of data, it might get crowded, but let's stick to simple day-wise for now.
+
+  const pieData = [
+    { name: 'Confirmed', value: activeBookings, color: '#10B981' }, // green-500
+    { name: 'Pending', value: pendingBookings, color: '#F59E0B' }, // yellow-500
+    { name: 'Completed', value: completedBookings, color: '#3B82F6' }, // blue-500
+    { name: 'Cancelled', value: cancelledBookings, color: '#EF4444' }, // red-500
+  ].filter(d => d.value > 0);
 
   const StatCard = ({ title, value, icon: Icon, color, subtext }) => (
     <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
@@ -209,7 +257,21 @@ const Admin = () => {
         <main className="flex-1 overflow-y-auto p-6 lg:p-8">
           {activeTab === 'overview' && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-gray-800">Dashboard Overview</h2>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <h2 className="text-2xl font-bold text-gray-800">Dashboard Overview</h2>
+                <div className="relative">
+                  <FaFilter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <select
+                    value={dateFilter}
+                    onChange={(e) => setDateFilter(e.target.value)}
+                    className="pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                  >
+                    <option value="all">All Time</option>
+                    <option value="month">This Month</option>
+                    <option value="7days">Last 7 Days</option>
+                  </select>
+                </div>
+              </div>
 
               {/* Stats Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -256,39 +318,109 @@ const Admin = () => {
                 />
               </div>
 
-              {/* Recent Activity / Charts Placeholder */}
+              {/* Charts & Recent Activity */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                {/* Revenue Trend Chart */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                  <h3 className="text-lg font-bold text-gray-800 mb-4">Booking Status Distribution</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="text-gray-600">Confirmed</span>
-                        <span className="font-medium">{activeBookings}</span>
-                      </div>
-                      <div className="w-full bg-gray-100 rounded-full h-2">
-                        <div className="bg-green-500 h-2 rounded-full" style={{ width: `${(activeBookings / (bookings.length || 1)) * 100}%` }}></div>
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="text-gray-600">Pending</span>
-                        <span className="font-medium">{pendingBookings}</span>
-                      </div>
-                      <div className="w-full bg-gray-100 rounded-full h-2">
-                        <div className="bg-yellow-500 h-2 rounded-full" style={{ width: `${(pendingBookings / (bookings.length || 1)) * 100}%` }}></div>
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="text-gray-600">Completed</span>
-                        <span className="font-medium">{completedBookings}</span>
-                      </div>
-                      <div className="w-full bg-gray-100 rounded-full h-2">
-                        <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${(completedBookings / (bookings.length || 1)) * 100}%` }}></div>
+                  <h3 className="text-lg font-bold text-gray-800 mb-4">Revenue Trend</h3>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                        <XAxis dataKey="date" stroke="#9CA3AF" tick={{ fontSize: 12 }} />
+                        <YAxis stroke="#9CA3AF" tick={{ fontSize: 12 }} tickFormatter={(value) => `₹${value}`} />
+                        <Tooltip
+                          contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                          formatter={(value) => [`₹${value}`, 'Revenue']}
+                        />
+                        <Line type="monotone" dataKey="amount" stroke="#3B82F6" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Booking Status Distribution (Donut Chart) */}
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
+                  <h3 className="text-lg font-bold text-gray-800 mb-4">Booking Status</h3>
+                  <div className="flex-1 min-h-[250px] relative">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={pieData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={80}
+                          paddingAngle={5}
+                          dataKey="value"
+                        >
+                          {pieData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    {/* Center Text */}
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div className="text-center">
+                        <span className="text-2xl font-bold text-gray-800">{filteredStatsBookings.length}</span>
+                        <p className="text-xs text-gray-500 uppercase">Total</p>
                       </div>
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {/* Recent Activity Table */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                  <h3 className="text-lg font-bold text-gray-800">Recent Transactions</h3>
+                  <button onClick={() => setActiveTab('bookings')} className="text-sm text-blue-600 hover:text-blue-800 font-medium">View All</button>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vehicle</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {bookings.slice(0, 5).map((booking) => (
+                        <tr key={booking._id} className="hover:bg-gray-50 transition">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">{booking.user?.username}</div>
+                            <div className="text-xs text-gray-500">{booking.user?.email}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">{booking.vehicle?.name}</div>
+                            <div className="text-xs text-gray-500">{booking.vehicle?.brand}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {new Date(booking.createdAt).toLocaleString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                            ₹{booking.totalPrice?.toLocaleString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                ${booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                                booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                  booking.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                    'bg-blue-100 text-blue-800'}`}>
+                              {booking.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>

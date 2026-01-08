@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchVehicles } from '../store/slices/vehicleSlice';
 import VehicleCard from '../components/VehicleCard';
+import RecommendedVehicles from '../components/RecommendedVehicles';
 import Loader from '../components/Loader';
 import { FaCar, FaShieldAlt, FaClock, FaStar, FaSearch, FaUserCheck, FaCreditCard, FaKey } from 'react-icons/fa';
 

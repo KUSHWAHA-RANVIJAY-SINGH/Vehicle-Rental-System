@@ -3,6 +3,7 @@ import { body, validationResult } from 'express-validator';
 import Vehicle from '../models/Vehicle.js';
 import { protect, admin, protectPartner } from '../middleware/authMiddleware.js';
 import upload from '../middleware/uploadMiddleware.js';
+import { calculateSurge } from '../utils/pricing.js';
 
 const router = express.Router();
 
@@ -55,7 +56,22 @@ router.get('/', async (req, res) => {// If caller passes start & end as query pa
         { $sort: { createdAt: -1 } }
       ]);
 
-      return res.json(vehicles);
+      // Calculate surge for each vehicle
+      const results = await Promise.all(vehicles.map(async (vehicle) => {
+        const surge = await calculateSurge(vehicle, pickup, dropoff);
+        const surgeMultiplier = surge.multiplier;
+
+        // Return vehicle with updated price (or separate surge info). 
+        // For standard display purposes, let's update the price per day temporarily in the response 
+        // OR add a 'currentPrice' field. To not break frontend, let's add `surgeMultiplier` and `currentPrice`.
+        return {
+          ...vehicle, // vehicle is a plain object from aggregate
+          surgeMultiplier,
+          currentPrice: Math.round(vehicle.pricePerDay * surgeMultiplier)
+        };
+      }));
+
+      return res.json(results);
     } catch (error) {
       return res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -106,12 +122,16 @@ router.get('/:id/availability', async (req, res) => {
 
     let vehicleId = req.params.id;
 
-    // Resolve slug to ID if necessary
-    if (!vehicleId.match(/^[0-9a-fA-F]{24}$/)) {
-      const vehicle = await Vehicle.findOne({ slug: vehicleId });
-      if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
-      vehicleId = vehicle._id;
+    // Resolve slug or ID to full vehicle object
+    let vehicle;
+    if (vehicleId.match(/^[0-9a-fA-F]{24}$/)) {
+      vehicle = await Vehicle.findById(vehicleId);
+    } else {
+      vehicle = await Vehicle.findOne({ slug: vehicleId });
     }
+
+    if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
+    vehicleId = vehicle._id;
 
     const conflict = await (await import('../models/Booking.js')).default.findOne({
       vehicle: vehicleId,
@@ -122,7 +142,14 @@ router.get('/:id/availability', async (req, res) => {
       ]
     });
 
-    res.json({ available: !Boolean(conflict), conflict: conflict ? { id: conflict._id, pickupDate: conflict.pickupDate, dropoffDate: conflict.dropoffDate } : null });
+    // Calculate Surge
+    const surgeData = await calculateSurge(vehicle, pickup, dropoff);
+
+    res.json({
+      available: !Boolean(conflict),
+      conflict: conflict ? { id: conflict._id, pickupDate: conflict.pickupDate, dropoffDate: conflict.dropoffDate } : null,
+      surge: surgeData
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }

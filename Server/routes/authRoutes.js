@@ -230,10 +230,12 @@ router.post('/upload-documents', protect, upload.fields([{ name: 'drivingLicense
 
     if (user) {
       if (req.files['drivingLicense']) {
-        user.drivingLicense = req.files['drivingLicense'][0].path;
+        // Store relative path
+        user.drivingLicense = `uploads/documents/${req.files['drivingLicense'][0].filename}`;
       }
       if (req.files['aadharCard']) {
-        user.aadharCard = req.files['aadharCard'][0].path;
+        // Store relative path
+        user.aadharCard = `uploads/documents/${req.files['aadharCard'][0].filename}`;
       }
 
       const updatedUser = await user.save();

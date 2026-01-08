@@ -1,76 +1,103 @@
 import Booking from '../models/Booking.js';
 import Vehicle from '../models/Vehicle.js';
+import axios from 'axios';
 
-// Simple content-based recommender using user's recent bookings
+// AI-Powered Recommendation using Python Microservice
 export const getRecommendationsForUser = async (req, res) => {
+         const userId = req.params.id;
+         const limit = Number(req.query.limit) || 3;
+
          try {
-                  const userId = req.params.id;
-                  const limit = Number(req.query.limit) || 3;
+                  // 1. Get user's last booked vehicle
+                  const lastBooking = await Booking.findOne({ user: userId })
+                           .sort({ createdAt: -1 })
+                           .populate('vehicle');
 
-                  // 1. Get recent bookings (most recent 50)
-                  const bookings = await Booking.find({ user: userId }).sort({ createdAt: -1 }).limit(50).populate('vehicle');
-
-                  if (!bookings || bookings.length === 0) {
-                           // Fall back: return latest active vehicles
-                           const fallback = await Vehicle.find({ available: true }).sort({ createdAt: -1 }).limit(limit);
-                           return res.json({ recommendations: fallback, reason: 'fallback' });
+                  // If no history, return fallback (latest available)
+                  if (!lastBooking || !lastBooking.vehicle) {
+                           const fallback = await Vehicle.find({ available: true, status: 'Approved' })
+                                    .sort({ createdAt: -1 })
+                                    .limit(limit);
+                           return res.json({ recommendations: fallback, reason: 'fallback-no-history' });
                   }
 
-                  // 2. Aggregate user preferences
-                  const typeCounts = {};
-                  const brandCounts = {};
-                  const priceValues = [];
-                  const featureCounts = {};
+                  // 2. Get all active vehicles
+                  // We need to pass them to the python script to find similarity
+                  const allVehicles = await Vehicle.find({
+                           available: true,
+                           status: 'Approved'
+                  }).lean();
+                  // .lean() converts Mongoose docs to plain JS objects, faster and compatible with JSON
 
-                  bookings.forEach(b => {
-                           if (!b.vehicle) return;
-                           const v = b.vehicle;
-                           typeCounts[v.type] = (typeCounts[v.type] || 0) + 1;
-                           brandCounts[v.brand] = (brandCounts[v.brand] || 0) + 1;
-                           if (v.pricePerDay) priceValues.push(v.pricePerDay);
-                           (v.features || []).forEach(f => { featureCounts[f] = (featureCounts[f] || 0) + 1; });
-                  });
+                  // Prepare Payload
+                  const payload = {
+                           all_vehicles: allVehicles,
+                           last_booked_vehicle: lastBooking.vehicle
+                  };
 
-                  // compute central price (median)
-                  priceValues.sort((a, b) => a - b);
-                  const medianPrice = priceValues.length ? priceValues[Math.floor(priceValues.length / 2)] : null;
+                  // 3. Call Python Microservice
+                  // Assuming python script is running on port 5000
+                  try {
+                           const pythonServiceUrl = 'http://localhost:5000/recommend';
+                           const response = await axios.post(pythonServiceUrl, payload);
 
-                  const preferredType = Object.keys(typeCounts).sort((a, b) => typeCounts[b] - typeCounts[a])[0];
-                  const preferredBrand = Object.keys(brandCounts).sort((a, b) => brandCounts[b] - brandCounts[a])[0];
+                           const recommendedIds = response.data.recommendations; // Expecting list of IDs
 
-                  // 3. Score candidate vehicles
-                  // Limit candidate set to available vehicles and some basic filters
-                  const candidates = await Vehicle.find({ available: true }).lean();
+                           if (recommendedIds && recommendedIds.length > 0) {
+                                    // 4. Fetch full vehicle objects for the returned IDs
+                                    // We preserve the order returned by ML (most similar first)
+                                    const recommendations = await Vehicle.find({ _id: { $in: recommendedIds } });
 
-                  const scored = candidates.map(v => {
-                           let score = 0;
-                           if (preferredType && v.type === preferredType) score += 5;
-                           if (preferredBrand && v.brand === preferredBrand) score += 4;
-                           if (medianPrice && v.pricePerDay) {
-                                    const diff = Math.abs(v.pricePerDay - medianPrice);
-                                    // closer prices get higher score
-                                    score += Math.max(0, 3 - Math.round(diff / (medianPrice || 1) * 3));
+                                    // Sort them to match the order of IDs in recommendedIds
+                                    const recommendationMap = new Map(recommendations.map(v => [String(v._id), v]));
+                                    const orderedRecommendations = recommendedIds
+                                             .map(id => recommendationMap.get(id))
+                                             .filter(Boolean); // removal of nulls if not found
+
+                                    return res.json({
+                                             recommendations: orderedRecommendations,
+                                             reason: 'ai-content-based',
+                                             lastBooked: lastBooking.vehicle.name
+                                    });
                            }
-                           (v.features || []).forEach(f => {
-                                    if (featureCounts[f]) score += Math.min(3, featureCounts[f]);
-                           });
+                  } catch (mlError) {
+                           console.warn('Python Microservice Error or Unreachable:', mlError.message);
+                           // Fall through to JS backup logic
+                  }
 
-                           // Slight prefer vehicles with more images / description
-                           if (v.images && v.images.length) score += Math.min(2, v.images.length);
-                           if (v.description) score += 1;
+                  // ==========================================
+                  // BACKUP LOGIC (Node.js Heuristic)
+                  // ==========================================
+                  // 1. Get recent bookings (already have last one, get more)
+                  const bookings = await Booking.find({ user: userId }).sort({ createdAt: -1 }).limit(10).populate('vehicle');
 
-                           return { vehicle: v, score };
+                  // Preferences
+                  const typeCounts = {};
+                  bookings.forEach(b => {
+                           if (b.vehicle) {
+                                    typeCounts[b.vehicle.type] = (typeCounts[b.vehicle.type] || 0) + 1;
+                           }
                   });
+                  const preferredType = Object.keys(typeCounts).sort((a, b) => typeCounts[b] - typeCounts[a])[0];
 
-                  // Remove vehicles the user already booked recently
-                  const bookedVehicleIds = new Set(bookings.map(b => String(b.vehicle?._id)).filter(Boolean));
-                  const filtered = scored.filter(s => !bookedVehicleIds.has(String(s.vehicle._id)));
+                  // Simple Filter: Same Type, different ID
+                  const recommendations = await Vehicle.find({
+                           available: true,
+                           status: 'Approved',
+                           type: preferredType,
+                           _id: { $ne: lastBooking.vehicle._id }
+                  }).limit(limit);
 
-                  filtered.sort((a, b) => b.score - a.score);
+                  // If still empty (e.g. no other cars of that type), just return generic latest
+                  if (recommendations.length === 0) {
+                           const generic = await Vehicle.find({
+                                    available: true, status: 'Approved', _id: { $ne: lastBooking.vehicle._id }
+                           }).limit(limit);
+                           return res.json({ recommendations: generic, reason: 'fallback-generic' });
+                  }
 
-                  const recommendations = filtered.slice(0, limit).map(s => s.vehicle);
+                  res.json({ recommendations, reason: 'heuristic-backup' });
 
-                  res.json({ recommendations, reason: 'personalized', meta: { preferredType, preferredBrand, medianPrice } });
          } catch (error) {
                   console.error('Recommendation error', error);
                   res.status(500).json({ message: 'Failed to generate recommendations', error: error.message });
