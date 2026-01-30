@@ -42,6 +42,8 @@ app.use('/api/payment', paymentRoutes);
 app.use('/api/contact', contactRoutes);
 import recommendationRoutes from './routes/recommendationRoutes.js';
 app.use('/api/recommendations', recommendationRoutes);
+import aiRoutes from './routes/aiRoutes.js';
+app.use('/api/ai', aiRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -56,10 +58,21 @@ if (process.env.NODE_ENV !== 'test') {
 
   const PORT = process.env.PORT || 5000;
 
+  app.use((err, req, res, next) => {
+    console.error('Global Error:', err);
+    import('fs').then(fs => {
+      const log = `[${new Date().toISOString()}] Global Error: ${err.stack || err.message}\n`;
+      fs.appendFileSync(path.join(__dirname, 'debug_error.log'), log);
+    });
+    res.status(500).json({ message: 'Internal Server Error', error: err.message });
+  });
+
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
-
+    console.log("Gemini Key Configured:", process.env.GEMINI_API_KEY ? "Yes (" + process.env.GEMINI_API_KEY.slice(-4) + ")" : "No");
   });
+
+
 }
 
 export default app;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { toast } from 'react-toastify';
-import { FaCloudUploadAlt, FaTimes } from 'react-icons/fa';
+import { FaCloudUploadAlt, FaTimes, FaMagic } from 'react-icons/fa';
 
 const VehicleForm = ({ vehicle, onSuccess }) => {
          const [formData, setFormData] = useState({
@@ -9,6 +9,7 @@ const VehicleForm = ({ vehicle, onSuccess }) => {
                   type: 'car',
                   brand: '',
                   model: '',
+                  engineCC: '',
                   year: new Date().getFullYear(),
                   pricePerDay: '',
                   fuelType: 'petrol',
@@ -30,7 +31,9 @@ const VehicleForm = ({ vehicle, onSuccess }) => {
          const [imageUrls, setImageUrls] = useState(''); // String input for URLs
          const [existingImages, setExistingImages] = useState([]); // URLs from backend (for edit)
          const [featureInput, setFeatureInput] = useState('');
+
          const [loading, setLoading] = useState(false);
+         const [generating, setGenerating] = useState(false);
 
          useEffect(() => {
                   if (vehicle) {
@@ -39,6 +42,7 @@ const VehicleForm = ({ vehicle, onSuccess }) => {
                                     type: vehicle.type || 'car',
                                     brand: vehicle.brand || '',
                                     model: vehicle.model || '',
+                                    engineCC: vehicle.engineCC || '',
                                     year: vehicle.year || new Date().getFullYear(),
                                     pricePerDay: vehicle.pricePerDay || '',
                                     fuelType: vehicle.fuelType || 'petrol',
@@ -59,12 +63,54 @@ const VehicleForm = ({ vehicle, onSuccess }) => {
                   }
          }, [vehicle]);
 
+         const calculateMinPrice = (type, cc) => {
+                  cc = Number(cc);
+                  if (!cc || cc <= 0) return 0;
+
+                  // Normalize type
+                  const vehicleType = type ? type.toLowerCase() : 'car';
+
+                  if (vehicleType === 'bike') {
+                           // Bike: Base ₹400 (first 100cc) + ₹40 per extra 25cc
+                           const basePrice = 400;
+                           const baseCC = 100;
+                           const ratePerExtra25CC = 40;
+
+                           if (cc <= baseCC) return basePrice;
+
+                           const extraCC = cc - baseCC;
+                           const extraSlabs = Math.ceil(extraCC / 25);
+                           return basePrice + (extraSlabs * ratePerExtra25CC);
+                  } else {
+                           // Car: Base ₹2000 (first 800cc) + ₹100 per extra 25cc
+                           // Defaulting to car logic if type is unknown or 'car'
+                           const basePrice = 2000;
+                           const baseCC = 800;
+                           const ratePerExtra25CC = 100;
+
+                           if (cc <= baseCC) return basePrice;
+
+                           const extraCC = cc - baseCC;
+                           const extraSlabs = Math.ceil(extraCC / 25);
+                           return basePrice + (extraSlabs * ratePerExtra25CC);
+                  }
+         };
+
          const handleChange = (e) => {
                   const { name, value, type, checked } = e.target;
-                  setFormData((prev) => ({
-                           ...prev,
-                           [name]: type === 'checkbox' ? checked : value,
-                  }));
+
+                  if (name === 'engineCC') {
+                           // Remove automatic price update
+                           setFormData((prev) => ({
+                                    ...prev,
+                                    [name]: value,
+                           }));
+                  } else {
+                           setFormData((prev) => ({
+                                    ...prev,
+                                    [name]: type === 'checkbox' ? checked : value,
+                           }));
+                  }
          };
 
          const handleImageChange = (e) => {
@@ -100,6 +146,15 @@ const VehicleForm = ({ vehicle, onSuccess }) => {
 
          const handleSubmit = async (e) => {
                   e.preventDefault();
+
+                  // Final Validation for Price
+                  // Final Validation for Price
+                  const minPrice = calculateMinPrice(formData.type, formData.engineCC);
+                  if (Number(formData.pricePerDay) < minPrice) {
+                           toast.error(`Price cannot be less than ₹${minPrice} for a ${formData.engineCC} CC ${formData.type}.`);
+                           return;
+                  }
+
                   setLoading(true);
 
                   try {
@@ -145,6 +200,30 @@ const VehicleForm = ({ vehicle, onSuccess }) => {
                            toast.error(err.response?.data?.message || 'Operation failed');
                   } finally {
                            setLoading(false);
+                  }
+         };
+
+         const handleGenerateDescription = async () => {
+                  if (!formData.brand || !formData.model) {
+                           toast.error('Please enter Brand and Model first.');
+                           return;
+                  }
+
+                  try {
+                           setGenerating(true);
+                           const { data } = await api.post('/ai/generate-description', {
+                                    brand: formData.brand,
+                                    model: formData.model,
+                                    features: formData.features
+                           });
+                           setFormData(prev => ({ ...prev, description: data.description }));
+                           toast.success('Description generated!');
+                  } catch (error) {
+                           console.error('AI generation error:', error);
+                           const errorMsg = error.response?.data?.error || error.response?.data?.details || 'Failed to generate description.';
+                           toast.error(errorMsg);
+                  } finally {
+                           setGenerating(false);
                   }
          };
 
@@ -201,6 +280,25 @@ const VehicleForm = ({ vehicle, onSuccess }) => {
                                              />
                                     </div>
 
+                                    {/* Engine CC */}
+                                    <div>
+                                             <label className="block text-gray-700 font-medium mb-1">Engine CC *</label>
+                                             <input
+                                                      type="number"
+                                                      name="engineCC"
+                                                      value={formData.engineCC}
+                                                      onChange={handleChange}
+                                                      className="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                                                      required
+                                                      placeholder="e.g. 150"
+                                             />
+                                             {formData.engineCC && (
+                                                      <p className="text-sm text-blue-600 mt-1 font-medium bg-blue-50 p-2 rounded">
+                                                               Minimum recommended price: ₹{calculateMinPrice(formData.type, formData.engineCC)}/day
+                                                      </p>
+                                             )}
+                                    </div>
+
                                     {/* Year */}
                                     <div>
                                              <label className="block text-gray-700 font-medium mb-1">Year *</label>
@@ -222,6 +320,7 @@ const VehicleForm = ({ vehicle, onSuccess }) => {
                                                       name="pricePerDay"
                                                       value={formData.pricePerDay}
                                                       onChange={handleChange}
+                                                      min={calculateMinPrice(formData.type, formData.engineCC)}
                                                       className="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
                                                       required
                                              />
@@ -312,7 +411,18 @@ const VehicleForm = ({ vehicle, onSuccess }) => {
 
                            {/* Description */}
                            <div>
-                                    <label className="block text-gray-700 font-medium mb-1">Description</label>
+                                    <div className="flex justify-between items-center mb-1">
+                                             <label className="block text-gray-700 font-medium">Description</label>
+                                             <button
+                                                      type="button"
+                                                      onClick={handleGenerateDescription}
+                                                      disabled={generating}
+                                                      className="text-sm flex items-center gap-2 text-purple-600 hover:text-purple-800 font-medium disabled:opacity-50"
+                                             >
+                                                      <FaMagic />
+                                                      {generating ? 'Generating...' : 'Generate with AI'}
+                                             </button>
+                                    </div>
                                     <textarea
                                              name="description"
                                              value={formData.description}

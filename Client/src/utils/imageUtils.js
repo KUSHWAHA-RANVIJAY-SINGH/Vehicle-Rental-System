@@ -22,7 +22,7 @@ export const getVehicleImageUrl = (vehicle, index = 0) => {
                   return defaultImage;
          }
 
-         const url = vehicle.images[index];
+         let url = vehicle.images[index];
 
          // If it's an absolute URL, return it
          if (url.startsWith('http://') || url.startsWith('https://')) {
@@ -34,8 +34,18 @@ export const getVehicleImageUrl = (vehicle, index = 0) => {
                   return url;
          }
 
+         // FIX: Handle legacy absolute system paths (e.g., /home/user/.../uploads/...)
+         // If we find 'uploads/' in the path, we assume everything after is the relative path
+         if (url.includes('uploads/')) {
+                  const parts = url.replace(/\\/g, '/').split('uploads/');
+                  if (parts.length > 1) {
+                           // Take the last part (in case uploads appears multiple times, extremely unlikely but safe)
+                           // and prepend 'uploads/' to make it relative
+                           url = 'uploads/' + parts.pop();
+                  }
+         }
+
          // It's likely a relative path (e.g. "uploads/image.jpg")
-         // It's likely a relative path.
 
          // If it starts with /src/, it's a local Vite asset (e.g. from dummy data imports).
          // Return it as is to be served by the frontend dev server.
@@ -56,7 +66,9 @@ export const getVehicleImageUrl = (vehicle, index = 0) => {
          }
 
          // Ensure url has leading slash if needed
-         const normalizedPath = url.startsWith('/') ? url : `/${url}`;
+         // also normalize backslashes from windows paths if any
+         const normalizedUrl = url.replace(/\\/g, '/');
+         const normalizedPath = normalizedUrl.startsWith('/') ? normalizedUrl : `/${normalizedUrl}`;
 
          return `${serverUrl}${normalizedPath}`;
 };

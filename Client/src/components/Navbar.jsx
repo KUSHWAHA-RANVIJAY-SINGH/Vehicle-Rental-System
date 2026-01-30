@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { logout } from '../store/slices/authSlice';
+import { logout, getProfile } from '../store/slices/authSlice';
 import { FaUser, FaSignOutAlt, FaCar, FaTachometerAlt, FaChevronDown, FaCog } from 'react-icons/fa';
 import { useState, useRef, useEffect } from 'react';
 
@@ -24,6 +24,13 @@ const Navbar = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  // Fetch latest profile on mount if authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      dispatch(getProfile());
+    }
+  }, [isAuthenticated, dispatch]);
 
   const handleLogout = () => {
     dispatch(logout());

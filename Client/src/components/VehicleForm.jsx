@@ -29,6 +29,8 @@ const VehicleForm = ({ vehicle, onSuccess }) => {
   });
 
   const [featureInput, setFeatureInput] = useState('');
+  // Local state for raw image input to allow typing commas
+  const [imageInput, setImageInput] = useState('');
 
   useEffect(() => {
     if (vehicle) {
@@ -55,6 +57,8 @@ const VehicleForm = ({ vehicle, onSuccess }) => {
         images: vehicle.images || [],
         features: vehicle.features || [],
       });
+      // Initialize raw input string
+      setImageInput((vehicle.images || []).join(', '));
     }
   }, [vehicle]);
 
@@ -67,7 +71,11 @@ const VehicleForm = ({ vehicle, onSuccess }) => {
   };
 
   const handleImageChange = (e) => {
-    const urls = e.target.value.split(',').map((url) => url.trim()).filter(Boolean);
+    const val = e.target.value;
+    setImageInput(val); // Update raw input so comma stays
+
+    // Parse for actual data
+    const urls = val.split(',').map((url) => url.trim()).filter(Boolean);
     setFormData((prev) => ({
       ...prev,
       images: urls,
@@ -263,7 +271,7 @@ const VehicleForm = ({ vehicle, onSuccess }) => {
         </label>
         <input
           type="text"
-          value={formData.images.join(', ')}
+          value={imageInput}
           onChange={handleImageChange}
           placeholder="https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800, https://images.unsplash.com/photo-1617531653332-bd46c24f2068?w=800"
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -414,4 +422,3 @@ const VehicleForm = ({ vehicle, onSuccess }) => {
 };
 
 export default VehicleForm;
-

@@ -38,6 +38,7 @@ const userSchema = new mongoose.Schema({
     default: false
   },
   partnerDetails: {
+    bankName: { type: String },
     bankAccount: { type: String },
     ifsc: { type: String },
     panCard: { type: String }, // URL or Number? Assuming Number/String for now based on context, or could be image URL. Let's assume String data.
@@ -56,6 +57,9 @@ const userSchema = new mongoose.Schema({
     type: String
   },
   aadharCard: {
+    type: String
+  },
+  panCardImage: {
     type: String
   }
 }, {

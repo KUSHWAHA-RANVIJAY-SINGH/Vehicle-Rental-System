@@ -9,7 +9,7 @@ import VehicleForm from '../components/VehicleForm';
 import {
   FaPlus, FaEdit, FaTrash, FaCheckCircle, FaTimesCircle,
   FaCar, FaMoneyBillWave, FaCalendarCheck, FaClock,
-  FaChartLine, FaList, FaBars, FaEnvelope, FaUsers, FaFilter
+  FaChartLine, FaList, FaBars, FaEnvelope, FaUsers, FaFilter, FaFileAlt
 } from 'react-icons/fa';
 import { getVehicleImageUrl, DEFAULT_CAR_IMAGE, DEFAULT_BIKE_IMAGE } from '../utils/imageUtils';
 import {
@@ -21,6 +21,7 @@ const Admin = () => {
   const dispatch = useDispatch();
   const { bookings, loading: bookingsLoading } = useSelector((state) => state.bookings);
   const { vehicles, loading: vehiclesLoading } = useSelector((state) => state.vehicles);
+  const { user } = useSelector((state) => state.auth);
 
   const [showVehicleModal, setShowVehicleModal] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState(null);
@@ -56,6 +57,7 @@ const Admin = () => {
     try {
       setPartnersLoading(true);
       const { data } = await api.get('/auth/partners');
+      console.log('Frontend fetched partners:', data);
       setPartners(data);
     } catch (error) {
       console.error('Error fetching partners:', error);
@@ -246,9 +248,9 @@ const Admin = () => {
             <FaBars className="text-xl" />
           </button>
           <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-500">Welcome, Admin</span>
+            <span className="text-sm text-gray-500">Welcome, {user?.username || 'Admin'}</span>
             <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
-              A
+              {user?.username?.charAt(0).toUpperCase() || 'A'}
             </div>
           </div>
         </header>
@@ -684,13 +686,21 @@ const Admin = () => {
             <div className="space-y-6">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <h2 className="text-2xl font-bold text-gray-800">Partner Verification</h2>
-                <input
-                  type="text"
-                  placeholder="Search partners..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Search partners..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <button
+                    onClick={fetchPartners}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center"
+                  >
+                    Refresh List
+                  </button>
+                </div>
               </div>
 
               {partnersLoading ? (
@@ -703,6 +713,7 @@ const Admin = () => {
                         <tr>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Partner</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bank Details</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">KYC Documents</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
@@ -727,6 +738,7 @@ const Admin = () => {
                             <td className="px-6 py-4 whitespace-nowrap">
                               {partner.partnerDetails ? (
                                 <div className="text-sm text-gray-500">
+                                  <div>Bank: {partner.partnerDetails.bankName || 'N/A'}</div>
                                   <div>Acct: {partner.partnerDetails.bankAccount || 'N/A'}</div>
                                   <div>IFSC: {partner.partnerDetails.ifsc || 'N/A'}</div>
                                   <div>PAN: {partner.partnerDetails.panCard || 'N/A'}</div>
@@ -734,6 +746,21 @@ const Admin = () => {
                               ) : (
                                 <span className="text-sm text-gray-400">No Details</span>
                               )}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex space-x-2">
+                                {partner.aadharCard ? (
+                                  <a href={`http://localhost:5000/${partner.aadharCard}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 flex items-center" title="Aadhaar Card">
+                                    <FaFileAlt className="mr-1" /> Aadhaar
+                                  </a>
+                                ) : <span className="text-gray-400 text-xs">No Aadhaar</span>}
+
+                                {(partner.panCardImage || partner.panCard) ? (
+                                  <a href={`http://localhost:5000/${partner.panCardImage || partner.panCard}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 flex items-center" title="PAN Card">
+                                    <FaFileAlt className="mr-1" /> PAN
+                                  </a>
+                                ) : <span className="text-gray-400 text-xs">No PAN</span>}
+                              </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 

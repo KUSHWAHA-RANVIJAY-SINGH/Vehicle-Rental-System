@@ -19,7 +19,7 @@ const Login = () => {
                   e.preventDefault();
                   setLoading(true);
                   try {
-                           const res = await api.post('/auth/login', formData);
+                           const res = await api.post('/auth/partner/login', formData);
                            localStorage.setItem('token', res.data.token);
                            localStorage.setItem('user', JSON.stringify(res.data.user));
 
@@ -40,7 +40,7 @@ const Login = () => {
 
          const handleGoogleSuccess = async (credentialResponse) => {
                   try {
-                           const res = await api.post('/auth/google', { tokenId: credentialResponse.credential, role: 'partner' });
+                           const res = await api.post('/auth/partner/google', { tokenId: credentialResponse.credential });
                            localStorage.setItem('token', res.data.token);
                            localStorage.setItem('user', JSON.stringify(res.data.user));
 

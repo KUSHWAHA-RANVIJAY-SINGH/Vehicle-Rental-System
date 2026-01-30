@@ -51,9 +51,7 @@ const Signup = () => {
 
                   try {
                            const { confirmPassword, ...registerData } = formData;
-                           const data = { ...registerData, role: 'partner' }; // Force Partner Role
-
-                           const res = await api.post('/auth/register', data);
+                           const res = await api.post('/auth/partner/register', registerData);
                            localStorage.setItem('token', res.data.token);
                            localStorage.setItem('user', JSON.stringify(res.data.user));
                            navigate("/kyc");
@@ -75,7 +73,7 @@ const Signup = () => {
                            // Let's rely on the Login logic for now. If they sign up via Google here, they become a user (likely renter).
                            // We can send a separate request to update role? Or just let them be renter and then have a flow to upgrade.
                            // For this task, let's keep it simple.
-                           const res = await api.post('/auth/google', { tokenId: credentialResponse.credential, role: 'partner' });
+                           const res = await api.post('/auth/partner/google', { tokenId: credentialResponse.credential });
 
                            // If new user, they might be renter by default.
                            if (res.data.user.role === 'renter') {

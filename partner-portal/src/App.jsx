@@ -5,6 +5,8 @@ import 'react-toastify/dist/ReactToastify.css';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import KYC from './pages/KYC';
+import AdminPartners from './pages/AdminPartners';
+import AdminUsers from './pages/AdminUsers';
 
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
@@ -32,6 +34,10 @@ function App() {
 
             <Route path="/bookings" element={<Bookings />} />
             <Route path="/profile" element={<Profile />} />
+
+            {/* Admin Routes */}
+            <Route path="/admin/partners" element={<AdminPartners />} />
+            <Route path="/admin/users" element={<AdminUsers />} />
           </Route>
         </Routes>
         <ToastContainer />

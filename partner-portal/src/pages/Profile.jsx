@@ -12,6 +12,7 @@ const Profile = () => {
                   email: '',
                   phone: '',
                   address: '',
+                  bankName: '',
                   bankAccount: '',
                   ifsc: '',
                   panCard: ''
@@ -23,13 +24,14 @@ const Profile = () => {
 
          const fetchProfile = async () => {
                   try {
-                           const res = await api.get('/auth/profile');
+                           const res = await api.get('/auth/partner/profile');
                            setUser(res.data);
                            setFormData({
                                     username: res.data.username || '',
                                     email: res.data.email || '',
                                     phone: res.data.phone || '',
                                     address: res.data.address || '',
+                                    bankName: res.data.partnerDetails?.bankName || '',
                                     bankAccount: res.data.partnerDetails?.bankAccount || '',
                                     ifsc: res.data.partnerDetails?.ifsc || '',
                                     panCard: res.data.partnerDetails?.panCard || ''
@@ -53,9 +55,10 @@ const Profile = () => {
                            // Looking at authRoutes.js Step 234: PUT /profile updates basic fields.
                            // It DOES NOT update partnerDetails yet. I will need to update the backend route too.
                            // For now, I'll send what I can.
-                           const res = await api.put('/auth/profile', {
+                           const res = await api.put('/auth/partner/profile', {
                                     ...formData,
                                     partnerDetails: {
+                                             bankName: formData.bankName,
                                              bankAccount: formData.bankAccount,
                                              ifsc: formData.ifsc,
                                              panCard: formData.panCard
@@ -130,6 +133,10 @@ const Profile = () => {
                                                                </h4>
                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                                         <div>
+                                                                                 <label className="block text-sm font-medium text-gray-600 mb-1">Bank Name</label>
+                                                                                 <input name="bankName" value={formData.bankName} onChange={handleChange} className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. HDFC Bank" />
+                                                                        </div>
+                                                                        <div>
                                                                                  <label className="block text-sm font-medium text-gray-600 mb-1">Bank Account Number</label>
                                                                                  <input name="bankAccount" value={formData.bankAccount} onChange={handleChange} className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500" placeholder="XXXXXXXXXXXX" />
                                                                         </div>
@@ -137,7 +144,7 @@ const Profile = () => {
                                                                                  <label className="block text-sm font-medium text-gray-600 mb-1">IFSC Code</label>
                                                                                  <input name="ifsc" value={formData.ifsc} onChange={handleChange} className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500" placeholder="ABCD0123456" />
                                                                         </div>
-                                                                        <div className="md:col-span-2">
+                                                                        <div>
                                                                                  <label className="block text-sm font-medium text-gray-600 mb-1">PAN Card Number</label>
                                                                                  <input name="panCard" value={formData.panCard} onChange={handleChange} className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500" placeholder="ABCDE1234F" />
                                                                         </div>

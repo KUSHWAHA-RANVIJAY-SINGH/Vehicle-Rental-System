@@ -72,6 +72,14 @@ const VehicleDetail = () => {
     return () => clearTimeout(timeoutId);
   }, [bookingData.pickupDate, bookingData.dropoffDate, currentVehicle?._id]);
 
+  const [selectedImage, setSelectedImage] = useState(null);
+
+  useEffect(() => {
+    if (currentVehicle) {
+      setSelectedImage(getVehicleImageUrl(currentVehicle));
+    }
+  }, [currentVehicle]);
+
   useEffect(() => {
     dispatch(fetchVehicleById(id));
     // ... rest of existing useEffect
@@ -313,7 +321,7 @@ const VehicleDetail = () => {
             {/* 1. Main Image */}
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
               <img
-                src={imageUrl}
+                src={selectedImage || imageUrl}
                 alt={currentVehicle.name || 'Vehicle'}
                 className="w-full h-[400px] object-cover"
                 onError={(e) => {
@@ -334,6 +342,7 @@ const VehicleDetail = () => {
                     <img
                       src={getVehicleImageUrl(currentVehicle, idx + 1)}
                       alt={`Gallery ${idx}`}
+                      onClick={() => setSelectedImage(getVehicleImageUrl(currentVehicle, idx + 1))}
                       className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition"
                       onError={(e) => {
                         const fallback = currentVehicle.type === 'bike' ? DEFAULT_BIKE_IMAGE : DEFAULT_CAR_IMAGE;
@@ -695,8 +704,8 @@ const VehicleDetail = () => {
                     type="submit"
                     disabled={!availabilityStatus.available || availabilityStatus.checking}
                     className={`w-full font-bold py-3 rounded-lg shadow-md transition-all transform ${!availabilityStatus.available || availabilityStatus.checking
-                        ? 'bg-gray-400 cursor-not-allowed text-gray-200'
-                        : 'bg-blue-600 hover:bg-blue-700 text-white hover:shadow-lg hover:-translate-y-0.5'
+                      ? 'bg-gray-400 cursor-not-allowed text-gray-200'
+                      : 'bg-blue-600 hover:bg-blue-700 text-white hover:shadow-lg hover:-translate-y-0.5'
                       }`}
                   >
                     {availabilityStatus.checking ? 'Checking Availability...' :

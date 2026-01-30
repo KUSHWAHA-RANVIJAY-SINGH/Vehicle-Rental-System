@@ -60,6 +60,11 @@ const VehicleCard = ({ vehicle }) => {
         </Link>
         <p className="text-gray-500 text-sm font-medium mb-4">
           {vehicle.brand} {vehicle.model} • {vehicle.year}
+          {vehicle.engineCC && (
+            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+              {vehicle.engineCC}cc
+            </span>
+          )}
         </p>
         {vehicle.registrationNumber && (
           <p className="text-gray-400 text-xs mb-1">Reg: {vehicle.registrationNumber}</p>

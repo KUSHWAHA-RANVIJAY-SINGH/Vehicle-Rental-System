@@ -5,7 +5,8 @@ import { fetchVehicles } from '../store/slices/vehicleSlice';
 import VehicleCard from '../components/VehicleCard';
 import RecommendedVehicles from '../components/RecommendedVehicles';
 import Loader from '../components/Loader';
-import { FaCar, FaShieldAlt, FaClock, FaStar, FaSearch, FaUserCheck, FaCreditCard, FaKey } from 'react-icons/fa';
+import HeroSlider from '../components/HeroSlider';
+import { FaShieldAlt, FaClock, FaStar, FaSearch, FaUserCheck, FaCreditCard, FaKey } from 'react-icons/fa';
 
 const Home = () => {
   const dispatch = useDispatch();
@@ -26,45 +27,7 @@ const Home = () => {
   return (
     <div className="font-sans">
       {/* Hero Section */}
-      <section className="relative h-screen min-h-[600px] flex items-center justify-center bg-gray-900 text-white overflow-hidden">
-        {/* Background Image with Overlay */}
-        <div className="absolute inset-0">
-          <img
-            src="https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=1920&q=80"
-            alt="Hero Background"
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 to-black/40"></div>
-        </div>
-
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8">
-          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight leading-tight animate-fade-in-up">
-            Find Your <span className="text-blue-500">Freedom</span> <br />
-            on the Open Road
-          </h1>
-          <p className="text-xl md:text-2xl text-gray-300 max-w-2xl mx-auto leading-relaxed animate-fade-in-up delay-100">
-            Premium cars and bikes for every journey. Affordable rates, wide selection, and 24/7 support.
-          </p>
-
-          <div className="flex flex-col sm:flex-row justify-center items-center gap-4 animate-fade-in-up delay-200">
-            <Link
-              to="/vehicles"
-              className="px-8 py-4 bg-blue-600 rounded-full font-bold text-lg hover:bg-blue-700 transition transform hover:scale-105 shadow-lg flex items-center"
-            >
-              <FaCar className="mr-2" /> Browse Vehicles
-            </Link>
-            <Link
-              to="/about"
-              className="px-8 py-4 bg-transparent border-2 border-white rounded-full font-bold text-lg hover:bg-white hover:text-gray-900 transition transform hover:scale-105"
-            >
-              Learn More
-            </Link>
-          </div>
-        </div>
-
-        {/* Decorative Element */}
-        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-gray-50 to-transparent"></div>
-      </section>
+      <HeroSlider />
 
       {/* How It Works Section */}
       <section className="py-20 bg-gray-50">

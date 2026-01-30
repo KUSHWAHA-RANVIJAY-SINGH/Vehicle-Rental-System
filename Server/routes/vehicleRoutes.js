@@ -1,16 +1,97 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
 import Vehicle from '../models/Vehicle.js';
-import { protect, admin, protectPartner } from '../middleware/authMiddleware.js';
+import { protect, admin, protectPartner, authenticatePartner } from '../middleware/authMiddleware.js';
 import upload from '../middleware/uploadMiddleware.js';
 import { calculateSurge } from '../utils/pricing.js';
 
 const router = express.Router();
 
+const getPriceFromCC = (cc, type = 'car') => {
+  const ccNum = Number(cc);
+  if (!ccNum || ccNum <= 0) return 0;
+
+  const vehicleType = type ? type.toLowerCase() : 'car';
+
+  if (vehicleType === 'bike') {
+    // Bike: Base ₹400 (first 100cc) + ₹40 per extra 25cc
+    const basePrice = 400;
+    const baseCC = 100;
+    const ratePerExtra25CC = 40;
+
+    if (ccNum <= baseCC) return basePrice;
+
+    const extraCC = ccNum - baseCC;
+    const extraSlabs = Math.ceil(extraCC / 25);
+    return basePrice + (extraSlabs * ratePerExtra25CC);
+  } else {
+    // Car: Base ₹2000 (first 800cc) + ₹100 per extra 25cc
+    const basePrice = 2000;
+    const baseCC = 800;
+    const ratePerExtra25CC = 100;
+
+    if (ccNum <= baseCC) return basePrice;
+
+    const extraCC = ccNum - baseCC;
+    const extraSlabs = Math.ceil(extraCC / 25);
+    return basePrice + (extraSlabs * ratePerExtra25CC);
+  }
+};
+
+// @route   PUT /api/vehicles/migrate-prices
+// @desc    Migrate existing vehicles to have engineCC and dynamic pricing
+// @access  Public (Temporary)
+router.put('/migrate-prices', async (req, res) => {
+  try {
+    const vehicles = await Vehicle.find({});
+    let updatedCount = 0;
+    let errorCount = 0;
+
+    for (const vehicle of vehicles) {
+      try {
+        let modified = false;
+
+        // 1. Handle Missing CC
+        if (!vehicle.engineCC) {
+          if (vehicle.type === 'bike') vehicle.engineCC = 150;
+          else if (vehicle.type === 'car') vehicle.engineCC = 1500;
+          else vehicle.engineCC = 150; // Fallback
+          modified = true;
+        }
+
+        // 2. Recalculate Price
+        const newPrice = getPriceFromCC(vehicle.engineCC);
+        if (vehicle.pricePerDay !== newPrice) {
+          vehicle.pricePerDay = newPrice;
+          modified = true;
+        }
+
+        if (modified) {
+          if (!vehicle.ownerId) {
+            console.log(`Skipping vehicle ${vehicle._id} due to missing ownerId`);
+            errorCount++;
+            continue;
+          }
+          await vehicle.save();
+          updatedCount++;
+        }
+      } catch (innerErr) {
+        console.error(`Failed to update vehicle ${vehicle._id}:`, innerErr.message);
+        errorCount++;
+      }
+    }
+
+    res.json({ message: `Successfully migrated ${updatedCount} vehicles. Failed: ${errorCount}` });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Migration failed', error: error.message });
+  }
+});
+
 // @route   GET /api/vehicles/my-vehicles
 // @desc    Get logged in partner's vehicles
 // @access  Private (Partner/Admin)
-router.get('/my-vehicles', protect, protectPartner, async (req, res) => {
+router.get('/my-vehicles', authenticatePartner, async (req, res) => {
   try {
     const vehicles = await Vehicle.find({ ownerId: req.user._id }).sort({ createdAt: -1 });
     res.json(vehicles);
@@ -185,12 +266,13 @@ router.get('/:id', async (req, res) => {
 // @route   POST /api/vehicles
 // @desc    Create a new vehicle (Partner/Admin)
 // @access  Private
-router.post('/', protect, protectPartner, upload.array('images', 5), [
+router.post('/', authenticatePartner, upload.array('images', 5), [
   body('name').notEmpty().withMessage('Name is required'),
   body('type').isIn(['car', 'bike']).withMessage('Type must be car or bike'),
   body('brand').notEmpty().withMessage('Brand is required'),
   body('model').notEmpty().withMessage('Model is required'),
-  body('pricePerDay').isNumeric().withMessage('Price must be a number'),
+  body('model').notEmpty().withMessage('Model is required'),
+  body('engineCC').isNumeric().withMessage('Engine CC is required'),
   body('location').notEmpty().withMessage('Location is required')
 ], async (req, res) => {
   try {
@@ -201,9 +283,9 @@ router.post('/', protect, protectPartner, upload.array('images', 5), [
 
     let imagePaths = [];
 
-    // 1. Add uploaded files
+    // 1. Add uploaded files (STORE RELATIVE PATHS)
     if (req.files) {
-      imagePaths = req.files.map(file => file.path);
+      imagePaths = req.files.map(file => `uploads/documents/${file.filename}`);
     }
 
     // 2. Add provided URLs (from req.body.images)
@@ -218,11 +300,18 @@ router.post('/', protect, protectPartner, upload.array('images', 5), [
       imagePaths = [...imagePaths, ...urls];
     }
 
+    // Determine price: Use provided price, else calculate from CC
+    let finalPrice = req.body.pricePerDay;
+    if (!finalPrice) {
+      finalPrice = getPriceFromCC(req.body.engineCC);
+    }
+
     const vehicleData = {
       ...req.body,
       ownerId: req.user._id,
       status: 'Pending', // Default to pending
-      images: imagePaths
+      images: imagePaths,
+      pricePerDay: finalPrice
     };
 
     const vehicle = await Vehicle.create(vehicleData);
@@ -235,7 +324,7 @@ router.post('/', protect, protectPartner, upload.array('images', 5), [
 // @route   PUT /api/vehicles/:id
 // @desc    Update a vehicle (Partner/Admin)
 // @access  Private
-router.put('/:id', protect, upload.array('images', 5), async (req, res) => {
+router.put('/:id', authenticatePartner, upload.array('images', 5), async (req, res) => {
   try {
     let vehicle = await Vehicle.findById(req.params.id);
 
@@ -251,10 +340,10 @@ router.put('/:id', protect, upload.array('images', 5), async (req, res) => {
     // Handle Image Updates
     let imagePaths = [];
 
-    // 1. Add uploaded files
+    // 1. Add uploaded files (STORE RELATIVE PATHS)
     if (req.files) {
       if (Array.isArray(req.files)) {
-        imagePaths = req.files.map(file => file.path);
+        imagePaths = req.files.map(file => `uploads/documents/${file.filename}`);
       }
     }
 
@@ -270,20 +359,24 @@ router.put('/:id', protect, upload.array('images', 5), async (req, res) => {
       imagePaths = [...imagePaths, ...urls];
     }
 
-    // If no images provided at all in update, preserve existing? 
-    // Usually invalid if we want to allow deleting all images, but let's assume if 'images' field is missing from body (JSON), 
-    // we might want to keep old ones. 
-    // BUT since we are sending FormData, 'images' key might be present but empty if all deleted.
-    // Logic: If 'images' key exists in body or files, use that. If completely absent, keep old?
-    // Frontend keeps `existingImages` and sends them back. So `imagePaths` should be the final state.
-
     const updateData = { ...req.body };
 
-    // Only update images if we have processed some (or if explicit empty list sent)
-    // If the frontend sends the list, we use it.
-    if (imagePaths.length > 0 || req.body.images) {
+    // Explicitly handle pricePerDay to ensure it is treated as a number if present
+    if (req.body.pricePerDay) {
+      updateData.pricePerDay = Number(req.body.pricePerDay);
+    }
+
+    // Do NOT automatically overwrite price based on CC during update unless price is missing and CC changed?
+    // Actually, trusting the user input is better. If they send pricePerDay, use it.
+    // If they don't send pricePerDay but change CC, maybe we should warn? But for now, let's strictly use what's sent.
+
+    // Only update images if we have processed some (or if explicit empty list sent logic - complicated)
+    // If we have new files OR explicit images list, update images.
+    if (imagePaths.length > 0 || (req.files && req.files.length > 0)) {
       updateData.images = imagePaths;
     }
+    // If req.body.images was passed (even empty), we might want to respect it if we want to delete all.
+    // But currently frontend sends existing images back.
 
     vehicle = await Vehicle.findByIdAndUpdate(
       req.params.id,
@@ -293,6 +386,11 @@ router.put('/:id', protect, upload.array('images', 5), async (req, res) => {
 
     res.json(vehicle);
   } catch (error) {
+    // Debug logging
+    console.error('PUT Update Error:', error);
+    import('fs').then(fs => {
+      fs.appendFileSync('debug_error.log', `[${new Date().toISOString()}] ${error.stack}\n`);
+    });
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });

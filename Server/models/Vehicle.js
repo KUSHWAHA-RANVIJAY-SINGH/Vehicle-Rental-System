@@ -127,6 +127,11 @@ const vehicleSchema = new mongoose.Schema({
     type: [String],
     default: []
   },
+  engineCC: {
+    type: Number,
+    required: true,
+    min: 0
+  },
   slug: {
     type: String,
     unique: true,

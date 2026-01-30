@@ -35,6 +35,7 @@ export const createOrder = async (req, res) => {
 };
 
 import Booking from '../models/Booking.js';
+import { sendBookingConfirmation } from '../utils/sendEmail.js';
 
 // @desc    Verify Razorpay Payment
 // @route   POST /api/bookings/verify-payment
@@ -66,6 +67,16 @@ export const verifyPayment = async (req, res) => {
                                     booking.paymentIntentId = razorpay_payment_id;
                                     booking.stripeSessionId = razorpay_order_id; // Using this field for order_id for now or create new field
                                     await booking.save();
+
+                                    // Populate details for email
+                                    await booking.populate('user', 'username email');
+                                    await booking.populate({
+                                             path: 'vehicle',
+                                             populate: { path: 'ownerId', select: 'username email' }
+                                    });
+
+                                    // Send Confirmation Email
+                                    await sendBookingConfirmation(booking);
                            }
 
                            res.json({

@@ -15,6 +15,10 @@ const Layout = () => {
 
          const menuItems = [
                   { name: 'Dashboard', path: '/dashboard', icon: <FaTachometerAlt /> },
+                  ...(user.role === 'admin' ? [
+                           { name: 'Partners', path: '/admin/partners', icon: <FaUser /> },
+                           { name: 'Users', path: '/admin/users', icon: <FaUser /> },
+                  ] : []),
                   { name: 'My Vehicles', path: '/vehicles', icon: <FaCar /> },
                   { name: 'Add Vehicle', path: '/add-vehicle', icon: <FaPlusCircle /> },
                   { name: 'Bookings', path: '/bookings', icon: <FaCalendarAlt /> },

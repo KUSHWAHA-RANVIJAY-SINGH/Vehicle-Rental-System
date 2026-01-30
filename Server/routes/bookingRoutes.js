@@ -2,9 +2,10 @@ import express from 'express';
 import { body, validationResult } from 'express-validator';
 import Booking from '../models/Booking.js';
 import Vehicle from '../models/Vehicle.js';
-import { protect, admin } from '../middleware/authMiddleware.js';
+import { protect, admin, authenticatePartner } from '../middleware/authMiddleware.js';
 import { createOrder, verifyPayment } from '../controllers/paymentController.js';
 import { calculateSurge } from '../utils/pricing.js'; // Import here
+import { sendBookingConfirmation } from '../utils/sendEmail.js';
 
 const router = express.Router();
 
@@ -157,8 +158,14 @@ router.post('/', protect, [
       totalPrice // Price now includes surge
     });
 
-    await booking.populate('vehicle');
+    await booking.populate({
+      path: 'vehicle',
+      populate: { path: 'ownerId', select: 'username email' }
+    });
     await booking.populate('user', 'username email');
+
+    // Send email notification (Booking Received - Pending Payment)
+    await sendBookingConfirmation(booking);
 
     res.status(201).json(booking);
   } catch (error) {
@@ -206,7 +213,7 @@ router.get('/', protect, admin, async (req, res) => {
 // @route   GET /api/bookings/partner-bookings
 // @desc    Get bookings for partner's vehicles
 // @access  Private (Partner)
-router.get('/partner-bookings', protect, async (req, res) => {
+router.get('/partner-bookings', authenticatePartner, async (req, res) => {
   try {
     // 1. Find all vehicles owned by the partner
     const vehicles = await Vehicle.find({ ownerId: req.user._id }).select('_id');
@@ -241,7 +248,16 @@ router.put('/:id/status', protect, admin, [
       req.params.id,
       { status: req.body.status },
       { new: true }
-    ).populate('vehicle').populate('user', 'username email');
+    ).populate('user', 'username email')
+      .populate({
+        path: 'vehicle',
+        populate: { path: 'ownerId', select: 'username email' }
+      });
+
+    // Send email if status is confirmed
+    if (booking && req.body.status === 'confirmed') {
+      await sendBookingConfirmation(booking);
+    }
 
     if (!booking) {
       return res.status(404).json({ message: 'Booking not found' });
